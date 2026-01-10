@@ -38,5 +38,4 @@ jobs:
 
       - name: Check exports
         run: |
-          node -e "require('./dist/index.cjs')"
-          node --input-type=module -e "import './dist/index.mjs'"
+          node --input-type=module -e "import './dist/index.js'"
