@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { generateZodSchemasString } from './index.js';
-import type { DatabaseConfig, SchemaGenerationOptions } from './types.js';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+import {generateZodSchemasString} from './index.js';
+import type {DatabaseConfig, SchemaGenerationOptions} from './types.js';
 
 const DEFAULT_OUTPUT = 'schema.ts';
 
@@ -11,107 +11,107 @@ const DEFAULT_OUTPUT = 'schema.ts';
  * Parse command line arguments
  */
 function parseArgs(): {
-  config: DatabaseConfig;
-  options: SchemaGenerationOptions;
-  output: string;
+    config: DatabaseConfig;
+    options: SchemaGenerationOptions;
+    output: string;
 } {
-  const args = process.argv.slice(2);
+    const args = process.argv.slice(2);
 
-  if (args.includes('--help') || args.includes('-h')) {
-    printHelp();
-    process.exit(0);
-  }
+    if (args.includes('--help') || args.includes('-h')) {
+        printHelp();
+        process.exit(0);
+    }
 
-  if (args.includes('--version') || args.includes('-v')) {
-    console.log('pg-to-zod 1.0.0');
-    process.exit(0);
-  }
+    if (args.includes('--version') || args.includes('-v')) {
+        console.log('pg-to-zod 1.0.0');
+        process.exit(0);
+    }
 
-  // Parse connection string or individual params
-  const connectionUrl = getArg(args, '--url');
-  let config: DatabaseConfig;
+    // Parse connection string or individual params
+    const connectionUrl = getArg(args, '--url');
+    let config: DatabaseConfig;
 
-  if (connectionUrl) {
-    config = parseConnectionUrl(connectionUrl);
-  } else {
-    config = {
-      host: getArg(args, '--host') || process.env.PGHOST || 'localhost',
-      port: parseInt(getArg(args, '--port') || process.env.PGPORT || '5432'),
-      database: getArg(args, '--database') || process.env.PGDATABASE || 'postgres',
-      user: getArg(args, '--user') || process.env.PGUSER || 'postgres',
-      password: getArg(args, '--password') || process.env.PGPASSWORD || '',
-      ssl: args.includes('--ssl'),
+    if (connectionUrl) {
+        config = parseConnectionUrl(connectionUrl);
+    } else {
+        config = {
+            host: getArg(args, '--host') || process.env.PGHOST || 'localhost',
+            port: parseInt(getArg(args, '--port') || process.env.PGPORT || '5432'),
+            database: getArg(args, '--database') || process.env.PGDATABASE || 'postgres',
+            user: getArg(args, '--user') || process.env.PGUSER || 'postgres',
+            password: getArg(args, '--password') || process.env.PGPASSWORD || '',
+            ssl: args.includes('--ssl'),
+        };
+    }
+
+    const options: SchemaGenerationOptions = {
+        schemas: getArgArray(args, '--schemas') || ['public'],
+        tables: getArgArray(args, '--tables'),
+        excludeTables: getArgArray(args, '--exclude-tables'),
+        generateInputSchemas: !args.includes('--no-input-schemas'), // Default: true
+        includeCompositeTypes: args.includes('--composite-types'), // Default: false
+        useBrandedTypes: args.includes('--branded-types'),
+        strictMode: args.includes('--strict'),
+        includeComments: !args.includes('--no-comments'),
+        useCamelCase: args.includes('--camel-case'),
     };
-  }
 
-  const options: SchemaGenerationOptions = {
-    schemas: getArgArray(args, '--schemas') || ['public'],
-    tables: getArgArray(args, '--tables'),
-    excludeTables: getArgArray(args, '--exclude-tables'),
-    generateInputSchemas: !args.includes('--no-input-schemas'), // Default: true
-    includeCompositeTypes: args.includes('--composite-types'), // Default: false
-    useBrandedTypes: args.includes('--branded-types'),
-    strictMode: args.includes('--strict'),
-    includeComments: !args.includes('--no-comments'),
-    useCamelCase: args.includes('--camel-case'),
-  };
+    const output = getArg(args, '--output') || getArg(args, '-o') || DEFAULT_OUTPUT;
 
-  const output = getArg(args, '--output') || getArg(args, '-o') || DEFAULT_OUTPUT;
-
-  return { config, options, output };
+    return {config, options, output};
 }
 
 /**
  * Get argument value
  */
 function getArg(args: string[], flag: string): string | undefined {
-  const index = args.indexOf(flag);
-  if (index !== -1 && index + 1 < args.length) {
-    return args[index + 1];
-  }
-  return undefined;
+    const index = args.indexOf(flag);
+    if (index !== -1 && index + 1 < args.length) {
+        return args[index + 1];
+    }
+    return undefined;
 }
 
 /**
  * Get argument array value (comma-separated)
  */
 function getArgArray(args: string[], flag: string): string[] | undefined {
-  const value = getArg(args, flag);
-  if (value) {
-    return value.split(',').map((s) => s.trim());
-  }
-  return undefined;
+    const value = getArg(args, flag);
+    if (value) {
+        return value.split(',').map((s) => s.trim());
+    }
+    return undefined;
 }
 
 /**
  * Parse PostgreSQL connection URL
  */
 function parseConnectionUrl(url: string): DatabaseConfig {
-  const match = url.match(
-    /postgresql:\/\/([^:]+):([^@]+)@([^:\/]+):(\d+)\/(.+)/
-  );
+    const match = url.match(
+        /postgresql:\/\/([^:]+):([^@]+)@([^:\/]+):(\d+)\/(.+)/
+    );
 
-  if (!match) {
-    throw new Error('Invalid connection URL format');
-  }
+    if (!match) {
+        throw new Error('Invalid connection URL format');
+    }
 
-  const [, user, password, host, port, database] = match;
+    const [, user, password, host, port, database] = match;
 
-  return {
-    host,
-    port: parseInt(port),
-    database,
-    user,
-    password,
-    ssl: url.includes('sslmode=require'),
-  };
+    return {
+        host,
+        port: parseInt(port),
+        database,
+        user,
+        password,
+        ssl: url.includes('sslmode=require'),
+    };
 }
 
 /**
  * Print help message
  */
 function printHelp(): void {
-  console.log(`
+    console.log(`
 pg-to-zod - Generate strict Zod v4 schemas from PostgreSQL database
 
 USAGE:
@@ -178,48 +178,48 @@ EXAMPLES:
  * Main CLI function
  */
 async function main(): Promise<void> {
-  try {
-    const { config, options, output } = parseArgs();
+    try {
+        const {config, options, output} = parseArgs();
 
-    console.log('🔍 Introspecting database...');
-    console.log(`   Database: ${config.database}`);
-    console.log(`   Schemas: ${options.schemas?.join(', ') || 'public'}`);
+        console.log('🔍 Introspecting database...');
+        console.log(`   Database: ${config.database}`);
+        console.log(`   Schemas: ${options.schemas?.join(', ') || 'public'}`);
 
-    const schema = await generateZodSchemasString(config, options);
+        const schema = await generateZodSchemasString(config, options);
 
-    // Write to file
-    const outputPath = path.resolve(process.cwd(), output);
-    await fs.writeFile(outputPath, schema, 'utf-8');
+        // Write to file
+        const outputPath = path.resolve(process.cwd(), output);
+        await fs.writeFile(outputPath, schema, 'utf-8');
 
-    console.log('✅ Schema generated successfully!');
-    console.log(`   Output: ${outputPath}`);
-    
-    // Count generated items
-    const enumCount = (schema.match(/export const \w+Schema = z\.enum\(/g) || []).length;
-    const tableCount = (schema.match(/export const \w+Schema = z\.object\({/g) || []).length - enumCount;
-    
-    console.log(`   Tables: ${tableCount}`);
-    console.log(`   Enums: ${enumCount}`);
+        console.log('✅ Schema generated successfully!');
+        console.log(`   Output: ${outputPath}`);
 
-    // Show warnings if any
-    if (schema.includes('// Warnings')) {
-      const warningLines = schema
-        .split('\n')
-        .filter((line) => line.startsWith('// - '))
-        .map((line) => line.slice(5));
-      
-      if (warningLines.length > 0) {
-        console.log('\n⚠️  Warnings:');
-        for (const warning of warningLines) {
-          console.log(`   ${warning}`);
+        // Count generated items
+        const enumCount = (schema.match(/export const \w+Schema = z\.enum\(/g) || []).length;
+        const tableCount = (schema.match(/export const \w+Schema = z\.object\({/g) || []).length - enumCount;
+
+        console.log(`   Tables: ${tableCount}`);
+        console.log(`   Enums: ${enumCount}`);
+
+        // Show warnings if any
+        if (schema.includes('// Warnings')) {
+            const warningLines = schema
+                .split('\n')
+                .filter((line) => line.startsWith('// - '))
+                .map((line) => line.slice(5));
+
+            if (warningLines.length > 0) {
+                console.log('\n⚠️  Warnings:');
+                for (const warning of warningLines) {
+                    console.log(`   ${warning}`);
+                }
+            }
         }
-      }
-    }
 
-  } catch (error) {
-    console.error('❌ Error:', error instanceof Error ? error.message : error);
-    process.exit(1);
-  }
+    } catch (error) {
+        console.error('❌ Error:', error instanceof Error ? error.message : error);
+        process.exit(1);
+    }
 }
 
 main();
