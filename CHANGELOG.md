@@ -1,5 +1,42 @@
 # Changelog
 
+## 2.0.0
+
+### Major Changes
+
+- 64f3673: Initial release of pg-to-zod - a comprehensive PostgreSQL to Zod v4 schema generator.
+
+  **Features:**
+
+  - Complete PostgreSQL database introspection
+  - Comprehensive type coverage (50+ PostgreSQL types)
+  - Strict Zod v4 schema generation
+  - CHECK constraint parsing and automatic enum generation
+  - CLI interface with comprehensive options
+  - Programmatic API for integration
+  - Support for enums, domains, composite types, and range types
+  - Multi-dimensional array support
+  - Smart Insert/Update schema generation (default behavior)
+  - Schema-prefixed naming to avoid collisions
+  - Dual CJS/ESM module support
+  - Composite types optional (use `--composite-types` flag)
+
+  **Type Mappings:**
+
+  - All PostgreSQL built-in types with proper Zod v4 validators
+  - Custom types: enums, domains, composite types, range types
+  - Network types with proper validation (inet, cidr, macaddr)
+  - Geometric types support
+  - Arrays including multi-dimensional
+
+  **Schema Generation:**
+
+  - Three schemas per table: Read, Insert, Update
+  - Read schema reflects actual database structure
+  - Insert schema with intelligent optional field detection
+  - Update schema with `.partial()` for flexible updates
+  - Schema-prefixed naming (e.g., `PublicUsersSchema`)
+
 All notable changes to this project will be documented in this file.
 
 ## [1.0.0] - 2026-01-10
@@ -7,6 +44,7 @@ All notable changes to this project will be documented in this file.
 ### Initial Release
 
 **Features:**
+
 - Complete PostgreSQL database introspection
 - Comprehensive type coverage (50+ PostgreSQL types)
 - Strict Zod v4 schema generation
@@ -22,6 +60,7 @@ All notable changes to this project will be documented in this file.
 - Composite types optional (use `--composite-types` flag)
 
 **Type Mappings (Zod v4):**
+
 - Basic types: smallint, integer, bigint, numeric, real, double precision
 - Text types: varchar, char, text, citext with length constraints
 - Boolean
@@ -37,6 +76,7 @@ All notable changes to this project will be documented in this file.
 - Custom types: enums, domains, composite types, range types
 
 **Constraint Support:**
+
 - NOT NULL awareness
 - Length constraints (varchar, char)
 - Numeric precision/scale
@@ -50,6 +90,7 @@ All notable changes to this project will be documented in this file.
 - Auto-generated fields (SERIAL, IDENTITY)
 
 **Documentation:**
+
 - Comprehensive README
 - Getting Started guide
 - Project summary
@@ -62,23 +103,27 @@ All notable changes to this project will be documented in this file.
 Updated type mappings to use correct Zod v4 APIs following the Zod 4 migration:
 
 **String Format Validators → Top-Level Helpers:**
+
 - `z.string().uuid()` → `z.uuid()` (stricter RFC 9562/4122 compliant)
 - `z.string().ip()` → `z.union([z.ipv4(), z.ipv6()])` (separate validators for IPv4/IPv6)
 - `z.string().email()` → `z.email()` (top-level helper)
 - `z.string().url()` → `z.url()` (top-level helper)
 
 **ISO Date/Time Validators:**
+
 - Time types now use `z.iso.time()` instead of regex
 - Interval types now use `z.iso.duration()` for ISO 8601 duration strings
 - Date types continue to use `z.date()` for JavaScript Date objects
 
 **Network Types:**
+
 - `inet` → `z.union([z.ipv4(), z.ipv6()])` (supports both IPv4 and IPv6)
 - `cidr` → `z.union([z.cidrv4(), z.cidrv6()])` (supports both CIDR notations)
 - `macaddr` → `z.mac()` (supports configurable delimiters)
 - `macaddr8` → continues to use regex (64-bit MAC addresses)
 
 **Benefits:**
+
 - More accurate type validation using native Zod v4 validators
 - Better error messages from specialized validators
 - Stricter UUID validation (RFC compliant)
