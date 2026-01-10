@@ -47,12 +47,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theNkennaAmadi/pg2zod.git"
+    "url": "https://github.com/theNkennaAmadi/pg-to-zod.git"
   },
   "bugs": {
-    "url": "https://github.com/theNkennaAmadi/pg2zod/issues"
+    "url": "https://github.com/theNkennaAmadi/pg-to-zod/issues"
   },
-  "homepage": "https://github.com/theNkennaAmadi/pg2zod#readme",
+  "homepage": "https://github.com/theNkennaAmadi/pg-to-zod#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
