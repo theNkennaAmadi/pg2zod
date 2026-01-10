@@ -1,5 +1,5 @@
 {
-  "name": "pg-to-zod",
+  "name": "pg2zod",
   "version": "2.0.0",
   "type": "module",
   "description": "Introspect PostgreSQL databases and generate strict, comprehensive Zod v4 schemas with full type coverage",
@@ -47,12 +47,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/theNkennaAmadi/pg-to-zod.git"
+    "url": "https://github.com/theNkennaAmadi/pg2zod.git"
   },
   "bugs": {
-    "url": "https://github.com/theNkennaAmadi/pg-to-zod/issues"
+    "url": "https://github.com/theNkennaAmadi/pg2zod/issues"
   },
-  "homepage": "https://github.com/theNkennaAmadi/pg-to-zod#readme",
+  "homepage": "https://github.com/theNkennaAmadi/pg2zod#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
