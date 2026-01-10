@@ -4,7 +4,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-pg-to-zod is a TypeScript package that introspects PostgreSQL databases and generates strict Zod v4 validation schemas. It supports all PostgreSQL types including enums, domains, composite types, ranges, arrays, and geometric types with comprehensive constraint translation (CHECK constraints, length limits, format validations).
+pg2zod is a TypeScript package that introspects PostgreSQL databases and generates strict Zod v4 validation schemas.
 
 ## Development Commands
 
@@ -41,7 +41,7 @@ node dist/cli.js --database pg_to_zod_test -o test-output.ts
 node dist/cli.js --database mydb --output schema.ts
 
 # With npx (installed package)
-npx pg-to-zod --database mydb -o schema.ts
+npx pg2zod --database mydb -o schema.ts
 
 # Full example with all options
 node dist/cli.js \

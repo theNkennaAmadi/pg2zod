@@ -23,7 +23,7 @@ function parseArgs(): {
     }
 
     if (args.includes('--version') || args.includes('-v')) {
-        console.log('pg-to-zod 1.0.0');
+        console.log('pg2zod 2.1.0');
         process.exit(0);
     }
 
@@ -115,10 +115,10 @@ function parseConnectionUrl(url: string): DatabaseConfig {
  */
 function printHelp(): void {
     console.log(`
-pg-to-zod - Generate strict Zod v4 schemas from PostgreSQL database
+pg2zod - Generate strict Zod v4 schemas from PostgreSQL database
 
 USAGE:
-  pg-to-zod [OPTIONS]
+  pg2zod [OPTIONS]
 
 CONNECTION OPTIONS:
   --url <url>              PostgreSQL connection URL
@@ -161,22 +161,22 @@ ENVIRONMENT VARIABLES:
 
 EXAMPLES:
   # Generate schemas from local database
-  pg-to-zod --database mydb --output src/schemas.ts
+  pg2zod --database mydb --output src/schemas.ts
 
   # Use connection URL
-  pg-to-zod --url postgresql://user:pass@localhost:5432/mydb
+  pg2zod --url postgresql://user:pass@localhost:5432/mydb
 
   # Generate with input schemas and camelCase
-  pg-to-zod --database mydb --input-schemas --camel-case
+  pg2zod --database mydb --input-schemas --camel-case
 
   # Include specific tables only
-  pg-to-zod --database mydb --tables users,posts,comments
+  pg2zod --database mydb --tables users,posts,comments
 
   # Exclude specific tables
-  pg-to-zod --database mydb --exclude-tables migrations,internal
+  pg2zod --database mydb --exclude-tables migrations,internal
 
   # Multiple schemas
-  pg-to-zod --database mydb --schemas public,auth,api
+  pg2zod --database mydb --schemas public,auth,api
 `);
 }
 
