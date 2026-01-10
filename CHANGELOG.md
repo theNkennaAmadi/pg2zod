@@ -10,14 +10,16 @@ All notable changes to this project will be documented in this file.
 - Complete PostgreSQL database introspection
 - Comprehensive type coverage (50+ PostgreSQL types)
 - Strict Zod v4 schema generation
-- Check constraint translation to Zod refinements
+- CHECK constraint parsing and automatic enum generation
 - CLI interface with comprehensive options
 - Programmatic API for integration
 - Support for enums, domains, composite types, and range types
 - Multi-dimensional array support
-- Input schema generation for INSERT/UPDATE operations
+- Smart Insert/Update schema generation (default behavior)
+- Schema-prefixed naming to avoid collisions (e.g., `PublicUsersSchema`)
 - camelCase field name conversion
 - Environment variable support
+- Composite types optional (use `--composite-types` flag)
 
 **Type Mappings (Zod v4):**
 - Basic types: smallint, integer, bigint, numeric, real, double precision
@@ -38,9 +40,14 @@ All notable changes to this project will be documented in this file.
 - NOT NULL awareness
 - Length constraints (varchar, char)
 - Numeric precision/scale
-- Check constraints: numeric comparisons, BETWEEN, IN, REGEX, length
+- CHECK constraint parsing and implementation:
+  - Numeric comparisons: `>, <, >=, <=`
+  - BETWEEN: `value BETWEEN min AND max`
+  - IN/ANY(ARRAY): `value = ANY (ARRAY[...])` → `z.enum([...])`
+  - Regex: `value ~ 'pattern'` → `z.string().regex(/pattern/)`
+  - Length: `length(value) >= n` → `z.string().min(n)`
 - Default value handling
-- Auto-generated fields (SERIAL)
+- Auto-generated fields (SERIAL, IDENTITY)
 
 **Documentation:**
 - Comprehensive README

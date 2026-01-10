@@ -19,15 +19,18 @@ A modern TypeScript package that automatically generates high-quality, strict Zo
 - Length constraints (`varchar(n)` → `.max(n)`)
 - Precision/scale validation for numeric types
 - Format validations (UUID, IP, MAC addresses, etc.)
-- Check constraint translation to Zod refinements
+- CHECK constraint parsing (comparisons, BETWEEN, IN, ANY/ARRAY, regex)
+- Automatic enum generation from CHECK constraints
 - NOT NULL awareness
 
 🎯 **Smart Code Generation**
 - Read schemas (reflect actual DB structure)
-- Insert schemas (for creating new records with optional defaults)
-- Update schemas (for partial updates - all fields optional)
-- TypeScript type inference support
+- Insert schemas (intelligent optional field detection based on defaults/auto-generation)
+- Update schemas (all fields optional but maintain validation)
+- TypeScript type inference support with `z.infer<>`
+- Schema-prefixed naming to avoid collisions (e.g., `PublicUsersSchema`)
 - Optional camelCase conversion
+- CHECK constraint parsing and implementation
 - Comprehensive comments
 
 🚀 **Modern Stack**
@@ -172,23 +175,32 @@ export type Int4range = z.infer<typeof Int4rangeSchema>;
 
 ### Check Constraints
 
-Simple check constraints are automatically translated to Zod refinements:
+CHECK constraints are automatically parsed and translated to Zod validations:
 
 ```sql
 CREATE TABLE products (
   price NUMERIC CHECK (price > 0),
   quantity INTEGER CHECK (quantity >= 0 AND quantity <= 1000),
-  code VARCHAR(20) CHECK (code ~ '^[A-Z]{3}-\d{4}$')
+  code VARCHAR(20) CHECK (code ~ '^[A-Z]{3}-\d{4}$'),
+  status TEXT CHECK (status = ANY (ARRAY['draft', 'published', 'archived']))
 );
 ```
 →
 ```typescript
-export const ProductsSchema = z.object({
+export const PublicProductsSchema = z.object({
   price: z.number().min(0.00000000000001),
   quantity: z.number().int().min(0).max(1000),
   code: z.string().regex(/^[A-Z]{3}-\d{4}$/),
+  status: z.enum(['draft', 'published', 'archived']),
 });
 ```
+
+**Supported CHECK constraint patterns:**
+- Numeric comparisons: `>, <, >=, <=`
+- BETWEEN: `value BETWEEN min AND max`
+- IN/ANY(ARRAY): `value = ANY (ARRAY['a', 'b'])` → `z.enum(['a', 'b'])`
+- Regex: `value ~ 'pattern'` → `z.string().regex(/pattern/)`
+- Length: `length(value) >= n` → `z.string().min(n)`
 
 ## CLI Options
 
@@ -263,8 +275,9 @@ interface SchemaGenerationOptions {
   schemas?: string[];              // Default: ['public']
   tables?: string[];               // Include only these
   excludeTables?: string[];        // Exclude these
-  generateInputSchemas?: boolean;  // Generate input schemas
-  useBrandedTypes?: boolean;       // Use branded types
+  generateInputSchemas?: boolean;  // Generate Insert/Update schemas (default: true)
+  includeCompositeTypes?: boolean; // Include composite types (default: false)
+  useBrandedTypes?: boolean;       // Use branded types (future)
   strictMode?: boolean;            // Fail on unknown types
   includeComments?: boolean;       // Include comments (default: true)
   useCamelCase?: boolean;          // Convert to camelCase
@@ -338,20 +351,20 @@ export const PublicUsersSchema = z.object({
 });
 export type PublicUsers = z.infer<typeof PublicUsersSchema>;
 
-/** Insert schema for users - fields with defaults are optional */
+/** Insert schema for users - only auto-generated fields and fields with defaults are optional */
 export const PublicUsersInsertSchema = z.object({
-  id: z.number().int().optional(), // auto-generated
-  username: z.string().max(50),
-  email: PublicEmailSchema,
-  role: PublicUserRoleSchema.optional(), // has default
-  age: z.number().int().min(18).max(120).nullable(),
-  tags: z.array(z.string()).nullable(),
-  metadata: z.record(z.string(), z.unknown()).nullable(),
-  created_at: z.date().optional(), // has default
+  id: z.number().int().optional(), // auto-generated: SERIAL/identity
+  username: z.string().max(50), // required: no default
+  email: PublicEmailSchema, // required: no default
+  role: PublicUserRoleSchema.optional(), // optional: has DEFAULT 'user'
+  age: z.number().int().min(18).max(120).nullable(), // nullable but no default, so required
+  tags: z.array(z.string()).nullable(), // nullable but no default, so required
+  metadata: z.record(z.string(), z.unknown()).nullable(), // nullable but no default, so required
+  created_at: z.date().optional(), // optional: has DEFAULT NOW()
 });
 export type PublicUsersInsert = z.infer<typeof PublicUsersInsertSchema>;
 
-/** Update schema for users - all fields optional for partial updates */
+/** Update schema for users - all fields optional, primary keys excluded, validation preserved */
 export const PublicUsersUpdateSchema = z.object({
   username: z.string().max(50).optional(),
   email: PublicEmailSchema.optional(),
@@ -359,6 +372,7 @@ export const PublicUsersUpdateSchema = z.object({
   age: z.number().int().min(18).max(120).optional().nullable(),
   tags: z.array(z.string()).optional().nullable(),
   metadata: z.record(z.string(), z.unknown()).optional().nullable(),
+  created_at: z.date().optional(),
 });
 export type PublicUsersUpdate = z.infer<typeof PublicUsersUpdateSchema>;
 ```

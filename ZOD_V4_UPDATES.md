@@ -191,6 +191,28 @@ Simply regenerate your schemas with the latest version of `pg-to-zod` to get the
 - Second parameter is the value type
 - Used for PostgreSQL JSON/JSONB types
 
+## Implementation Features
+
+### Schema Naming Convention
+To avoid naming collisions, all generated schemas include the schema name as a prefix:
+- **Before**: `UsersSchema`, `CommentThreadsSchema`
+- **After**: `PublicUsersSchema`, `PublicCommentThreadsSchema`
+- **Composite types**: Suffix with `Composite` (e.g., `PublicAddressCompositeSchema`)
+
+### Three Schemas Per Table
+By default, pg-to-zod generates:
+1. **Read Schema** - Reflects actual database structure
+2. **Insert Schema** - Smart optional detection (only auto-generated/default fields optional)
+3. **Update Schema** - All fields optional, primary keys excluded, validation preserved
+
+### CHECK Constraint Support
+CHECK constraints are parsed and converted to Zod validations:
+- `value > 0` → `.min(0.00000000000001)`
+- `value BETWEEN 1 AND 100` → `.min(1).max(100)`
+- `value = ANY (ARRAY['a', 'b', 'c'])` → `z.enum(['a', 'b', 'c'])`
+- `value ~ 'pattern'` → `z.string().regex(/pattern/)`
+- `length(value) >= 10` → `z.string().min(10)`
+
 ## Version Info
 
 - **pg-to-zod version**: 1.0.0
