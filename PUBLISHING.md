@@ -5,7 +5,7 @@ This package uses **Changesets** for versioning and publishing.
 ## Overview
 
 - **Changesets**: Manages versioning and changelogs
-- **tsup**: Builds dual CJS/ESM bundles
+- **tsdown**: Builds dual CJS/ESM bundles (powered by Rolldown)
 - **GitHub Actions**: Automates publishing to npm
 
 ## Development Workflow
@@ -110,11 +110,11 @@ The package is built with dual CJS/ESM support:
 ```json
 {
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     }
   }
@@ -170,7 +170,7 @@ Test both module systems:
 node -e "require('./dist/index.cjs')"
 
 # Test ESM
-node --input-type=module -e "import('./dist/index.js')"
+node --input-type=module -e "import('./dist/index.mjs')"
 ```
 
 ## Best Practices
@@ -211,4 +211,4 @@ git push
 - [Changesets Documentation](https://github.com/changesets/changesets)
 - [Semantic Versioning](https://semver.org/)
 - [npm Publishing Guide](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry)
-- [tsup Documentation](https://tsup.egoist.dev/)
+- [tsdown Documentation](https://tsdown.vercel.app/)

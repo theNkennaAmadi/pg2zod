@@ -1,18 +1,19 @@
 {
   "name": "pg-to-zod",
   "version": "1.0.0",
+  "type": "module",
   "description": "Introspect PostgreSQL databases and generate strict, comprehensive Zod v4 schemas with full type coverage",
   "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "bin": {
-    "pg-to-zod": "./dist/cli.js"
+    "pg-to-zod": "./dist/cli.mjs"
   },
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
       },
       "require": {
         "types": "./dist/index.d.cts",
@@ -27,8 +28,8 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "test": "node --test dist/**/*.test.js",
     "changeset": "changeset",
     "version": "changeset version",
@@ -71,7 +72,7 @@
     "@changesets/cli": "^2.29.8",
     "@types/node": "^22.10.5",
     "@types/pg": "^8.11.10",
-    "tsup": "^8.5.1",
+    "tsdown": "^0.19.0",
     "typescript": "^5.7.2"
   },
   "engines": {
