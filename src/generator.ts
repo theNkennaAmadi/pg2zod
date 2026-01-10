@@ -58,17 +58,59 @@ export function generateSchemas(
         code: generateViewSchema(view, metadata, options, warnings),
     })) || [];
 
-    // Generate routine schemas (filter by security type)
+    // Generate routine schemas (filter by security type and internal types)
     const filteredRoutines = metadata.routines?.filter((routine) => {
         // By default, only include SECURITY DEFINER functions
         // Include SECURITY INVOKER only if explicitly requested
         if (routine.securityType === 'INVOKER' && !options.includeSecurityInvoker) {
             return false;
         }
+        
+        // Skip routines with internal PostgreSQL types
+        // These are low-level system functions not meant for application use
+        const internalTypes = ['internal', 'trigger', 'event_trigger', 'cstring', 'opaque', '"char"', 'language_handler', 'fdw_handler', 'index_am_handler', 'tsm_handler', 'table_am_handler'];
+        
+        // Check parameters for internal types
+        const hasInternalParam = routine.parameters.some(param => 
+            internalTypes.includes(param.dataType.toLowerCase()) || 
+            internalTypes.includes(param.udtName.toLowerCase())
+        );
+        
+        // Check return type for internal types
+        const hasInternalReturn = routine.returnType && (
+            internalTypes.includes(routine.returnType.toLowerCase()) ||
+            (routine.returnUdtName && internalTypes.includes(routine.returnUdtName.toLowerCase()))
+        );
+        
+        if (hasInternalParam || hasInternalReturn) {
+            return false;
+        }
+        
+        // Skip functions with duplicate parameter names (would cause invalid TypeScript)
+        const paramNames = routine.parameters.map(p => p.parameterName.toLowerCase());
+        const hasDuplicateParams = new Set(paramNames).size !== paramNames.length;
+        if (hasDuplicateParams) {
+            return false;
+        }
+        
         return true;
     }) || [];
 
-    const routines = filteredRoutines.map((routine) => ({
+    // Handle function overloading by skipping duplicates - only keep first occurrence
+    const seenRoutineNames = new Set<string>();
+    const uniqueRoutines = filteredRoutines.filter((routine) => {
+        const baseName = toPascalCase(routine.schemaName) + toPascalCase(routine.routineName);
+        
+        if (seenRoutineNames.has(baseName)) {
+            // Skip duplicates (overloaded functions)
+            return false;
+        }
+        
+        seenRoutineNames.add(baseName);
+        return true;
+    });
+    
+    const routines = uniqueRoutines.map((routine) => ({
         name: toPascalCase(routine.schemaName) + toPascalCase(routine.routineName),
         code: generateRoutineSchema(routine, metadata, options, warnings),
     }));
