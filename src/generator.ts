@@ -5,6 +5,8 @@ import type {
   GenerationResult,
   SchemaGenerationOptions,
   TableMetadata,
+  ViewMetadata,
+  RoutineMetadata,
 } from './types.js';
 import {applyCheckConstraints, mapColumnToZod, toCamelCase, toPascalCase,} from './type-mapper.js';
 
@@ -50,12 +52,35 @@ export function generateSchemas(
         schemas.push(schema);
     }
 
+    // Generate view schemas
+    const views = metadata.views?.map((view) => ({
+        name: toPascalCase(view.schemaName) + toPascalCase(view.viewName),
+        code: generateViewSchema(view, metadata, options, warnings),
+    })) || [];
+
+    // Generate routine schemas (filter by security type)
+    const filteredRoutines = metadata.routines?.filter((routine) => {
+        // By default, only include SECURITY DEFINER functions
+        // Include SECURITY INVOKER only if explicitly requested
+        if (routine.securityType === 'INVOKER' && !options.includeSecurityInvoker) {
+            return false;
+        }
+        return true;
+    }) || [];
+
+    const routines = filteredRoutines.map((routine) => ({
+        name: toPascalCase(routine.schemaName) + toPascalCase(routine.routineName),
+        code: generateRoutineSchema(routine, metadata, options, warnings),
+    }));
+
     return {
         schemas,
         enums,
         compositeTypes,
         domains,
         ranges,
+        views,
+        routines,
         warnings,
     };
 }
@@ -252,6 +277,211 @@ function generateDomainSchema(
 
     code += `export const ${schemaName} = ${zodType};\n`;
     code += `export type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
+
+    return code;
+}
+
+/**
+ * Generate view schema (read-only)
+ */
+function generateViewSchema(
+    view: ViewMetadata,
+    metadata: DatabaseMetadata,
+    options: SchemaGenerationOptions,
+    warnings: string[]
+): string {
+    const schemaPrefix = toPascalCase(view.schemaName);
+    const viewName = toPascalCase(view.viewName);
+    const schemaName = `${schemaPrefix}${viewName}Schema`;
+    const typeName = `${schemaPrefix}${viewName}`;
+
+    let code = '';
+
+    if (options.includeComments) {
+        code += `/** View: ${view.schemaName}.${view.viewName} (read-only) */\n`;
+    }
+
+    code += `export const ${schemaName} = z.object({\n`;
+
+    for (const column of view.columns) {
+        const fieldName = options.useCamelCase ? toCamelCase(column.columnName) : column.columnName;
+        const zodType = mapColumnToZod(column, metadata, options, warnings);
+
+        if (options.includeComments) {
+            code += `  /** ${column.dataType} */\n`;
+        }
+        code += `  ${fieldName}: ${zodType},\n`;
+    }
+
+    code += `});\n`;
+    code += `export type ${typeName} = z.infer<typeof ${schemaName}>;\n`;
+
+    return code;
+}
+
+/**
+ * Generate routine schema (function/procedure)
+ */
+function generateRoutineSchema(
+    routine: RoutineMetadata,
+    metadata: DatabaseMetadata,
+    options: SchemaGenerationOptions,
+    warnings: string[]
+): string {
+    const schemaPrefix = toPascalCase(routine.schemaName);
+    const routineName = toPascalCase(routine.routineName);
+    const paramsSchemaName = `${schemaPrefix}${routineName}ParamsSchema`;
+    const returnSchemaName = `${schemaPrefix}${routineName}ReturnSchema`;
+    const paramsTypeName = `${schemaPrefix}${routineName}Params`;
+    const returnTypeName = `${schemaPrefix}${routineName}Return`;
+
+    let code = '';
+
+    if (options.includeComments) {
+        code += `/** ${routine.routineType}: ${routine.schemaName}.${routine.routineName} */\n`;
+    }
+
+    // Generate parameters schema (input)
+    const inParams = routine.parameters.filter(
+        (p) => p.parameterMode === 'IN' || p.parameterMode === 'INOUT'
+    );
+
+    if (inParams.length > 0) {
+        code += `export const ${paramsSchemaName} = z.object({\n`;
+
+        for (const param of inParams) {
+            const fieldName = options.useCamelCase ? toCamelCase(param.parameterName) : param.parameterName;
+
+            // Create a mock column for type mapping
+            const mockColumn: ColumnMetadata = {
+                columnName: param.parameterName,
+                dataType: param.dataType,
+                isNullable: param.isNullable,
+                columnDefault: null,
+                characterMaximumLength: null,
+                numericPrecision: null,
+                numericScale: null,
+                datetimePrecision: null,
+                udtName: param.udtName,
+                domainName: null,
+                arrayDimensions: 0,
+                isArray: param.dataType === 'ARRAY',
+            };
+
+            const zodType = mapColumnToZod(mockColumn, metadata, options, warnings);
+
+            if (options.includeComments) {
+                code += `  /** ${param.dataType} (${param.parameterMode}) */\n`;
+            }
+            code += `  ${fieldName}: ${zodType},\n`;
+        }
+
+        code += `});\n`;
+        code += `export type ${paramsTypeName} = z.infer<typeof ${paramsSchemaName}>;\n\n`;
+    }
+
+    // Generate return type schema (output)
+    const outParams = routine.parameters.filter(
+        (p) => p.parameterMode === 'OUT' || p.parameterMode === 'INOUT'
+    );
+
+    if (routine.routineType === 'FUNCTION' && routine.returnType && routine.returnType !== 'void') {
+        // For functions with return values
+        if (outParams.length > 0) {
+            // Multiple output parameters - return object
+            code += `export const ${returnSchemaName} = z.object({\n`;
+
+            for (const param of outParams) {
+                const fieldName = options.useCamelCase ? toCamelCase(param.parameterName) : param.parameterName;
+
+                const mockColumn: ColumnMetadata = {
+                    columnName: param.parameterName,
+                    dataType: param.dataType,
+                    isNullable: param.isNullable,
+                    columnDefault: null,
+                    characterMaximumLength: null,
+                    numericPrecision: null,
+                    numericScale: null,
+                    datetimePrecision: null,
+                    udtName: param.udtName,
+                    domainName: null,
+                    arrayDimensions: 0,
+                    isArray: param.dataType === 'ARRAY',
+                };
+
+                const zodType = mapColumnToZod(mockColumn, metadata, options, warnings);
+
+                if (options.includeComments) {
+                    code += `  /** ${param.dataType} (${param.parameterMode}) */\n`;
+                }
+                code += `  ${fieldName}: ${zodType},\n`;
+            }
+
+            code += `});\n`;
+        } else {
+            // Single return value
+            const mockColumn: ColumnMetadata = {
+                columnName: 'return_value',
+                dataType: routine.returnType,
+                isNullable: false,
+                columnDefault: null,
+                characterMaximumLength: null,
+                numericPrecision: null,
+                numericScale: null,
+                datetimePrecision: null,
+                udtName: routine.returnUdtName || routine.returnType,
+                domainName: null,
+                arrayDimensions: 0,
+                isArray: routine.returnType === 'ARRAY' || routine.returnsSet,
+            };
+
+            const zodType = mapColumnToZod(mockColumn, metadata, options, warnings);
+            
+            if (options.includeComments) {
+                code += `/** Returns: ${routine.returnType} */\n`;
+            }
+            
+            if (routine.returnsSet) {
+                code += `export const ${returnSchemaName} = z.array(${zodType});\n`;
+            } else {
+                code += `export const ${returnSchemaName} = ${zodType};\n`;
+            }
+        }
+
+        code += `export type ${returnTypeName} = z.infer<typeof ${returnSchemaName}>;\n`;
+    } else if (outParams.length > 0) {
+        // Procedures with OUT parameters
+        code += `export const ${returnSchemaName} = z.object({\n`;
+
+        for (const param of outParams) {
+            const fieldName = options.useCamelCase ? toCamelCase(param.parameterName) : param.parameterName;
+
+            const mockColumn: ColumnMetadata = {
+                columnName: param.parameterName,
+                dataType: param.dataType,
+                isNullable: param.isNullable,
+                columnDefault: null,
+                characterMaximumLength: null,
+                numericPrecision: null,
+                numericScale: null,
+                datetimePrecision: null,
+                udtName: param.udtName,
+                domainName: null,
+                arrayDimensions: 0,
+                isArray: param.dataType === 'ARRAY',
+            };
+
+            const zodType = mapColumnToZod(mockColumn, metadata, options, warnings);
+
+            if (options.includeComments) {
+                code += `  /** ${param.dataType} (${param.parameterMode}) */\n`;
+            }
+            code += `  ${fieldName}: ${zodType},\n`;
+        }
+
+        code += `});\n`;
+        code += `export type ${returnTypeName} = z.infer<typeof ${returnSchemaName}>;\n`;
+    }
 
     return code;
 }
@@ -481,6 +711,28 @@ export function formatOutput(result: GenerationResult): string {
 
         for (const schema of result.schemas) {
             output += schema.typeDefinitions + '\n';
+        }
+    }
+
+    // Views
+    if (result.views && result.views.length > 0) {
+        output += `// ============================================\n`;
+        output += `// Views\n`;
+        output += `// ============================================\n\n`;
+
+        for (const view of result.views) {
+            output += view.code + '\n';
+        }
+    }
+
+    // Routines
+    if (result.routines && result.routines.length > 0) {
+        output += `// ============================================\n`;
+        output += `// Routines (Functions/Procedures)\n`;
+        output += `// ============================================\n\n`;
+
+        for (const routine of result.routines) {
+            output += routine.code + '\n';
         }
     }
 

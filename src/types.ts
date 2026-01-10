@@ -99,10 +99,48 @@ export interface TableMetadata {
 }
 
 /**
+ * View metadata
+ */
+export interface ViewMetadata {
+  viewName: string;
+  schemaName: string;
+  columns: ColumnMetadata[];
+  viewDefinition: string | null;
+}
+
+/**
+ * Routine (function/procedure) parameter metadata
+ */
+export interface RoutineParameterMetadata {
+  parameterName: string;
+  dataType: string;
+  parameterMode: 'IN' | 'OUT' | 'INOUT' | 'VARIADIC';
+  ordinalPosition: number;
+  udtName: string;
+  isNullable: boolean;
+}
+
+/**
+ * Routine (function/procedure) metadata
+ */
+export interface RoutineMetadata {
+  routineName: string;
+  schemaName: string;
+  routineType: 'FUNCTION' | 'PROCEDURE';
+  securityType: 'DEFINER' | 'INVOKER';
+  parameters: RoutineParameterMetadata[];
+  returnType: string | null;
+  returnUdtName: string | null;
+  returnsSet: boolean;
+}
+
+/**
  * Complete database schema metadata
  */
 export interface DatabaseMetadata {
   tables: TableMetadata[];
+  views: ViewMetadata[];
+  routines: RoutineMetadata[];
   enums: EnumMetadata[];
   compositeTypes: CompositeTypeMetadata[];
   rangeTypes: RangeTypeMetadata[];
@@ -127,6 +165,15 @@ export interface SchemaGenerationOptions {
   
   /** Include composite types in generation (default: false) */
   includeCompositeTypes?: boolean;
+  
+  /** Include database views in generation (default: false) */
+  includeViews?: boolean;
+  
+  /** Include database functions/procedures in generation (default: false) */
+  includeRoutines?: boolean;
+  
+  /** Include security invoker routines (default: false, only security definer) */
+  includeSecurityInvoker?: boolean;
   
   /** Use branded types for IDs and specific fields */
   useBrandedTypes?: boolean;
@@ -160,6 +207,8 @@ export interface GeneratedSchema {
  */
 export interface GenerationResult {
   schemas: GeneratedSchema[];
+  views: Array<{ name: string; code: string }>;
+  routines: Array<{ name: string; code: string }>;
   enums: Array<{ name: string; code: string }>;
   compositeTypes: Array<{ name: string; code: string }>;
   domains: Array<{ name: string; code: string }>;

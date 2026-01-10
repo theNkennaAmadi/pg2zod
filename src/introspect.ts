@@ -3,6 +3,8 @@ import type {
   DatabaseConfig,
   DatabaseMetadata,
   TableMetadata,
+  ViewMetadata,
+  RoutineMetadata,
   EnumMetadata,
   CompositeTypeMetadata,
   RangeTypeMetadata,
@@ -24,8 +26,18 @@ export async function introspectDatabase(
   try {
     const schemas = options.schemas ?? ['public'];
 
-    const [tables, enums, compositeTypes, rangeTypes, domains] = await Promise.all([
+    const [
+      tables,
+      views,
+      routines,
+      enums,
+      compositeTypes,
+      rangeTypes,
+      domains,
+    ] = await Promise.all([
       introspectTables(pool, schemas, options),
+      options.includeViews ? introspectViews(pool, schemas) : Promise.resolve([]),
+      options.includeRoutines ? introspectRoutines(pool, schemas) : Promise.resolve([]),
       introspectEnums(pool, schemas),
       introspectCompositeTypes(pool, schemas),
       introspectRangeTypes(pool, schemas),
@@ -34,6 +46,8 @@ export async function introspectDatabase(
 
     return {
       tables,
+      views,
+      routines,
       enums,
       compositeTypes,
       rangeTypes,
@@ -431,4 +445,191 @@ async function introspectDomains(
   }
 
   return domains;
+}
+
+/**
+ * Introspect database views
+ */
+async function introspectViews(
+  pool: pg.Pool,
+  schemas: string[]
+): Promise<ViewMetadata[]> {
+  const schemaFilter = schemas.map((_, i) => `$${i + 1}`).join(', ');
+
+  // Get view definitions
+  const viewsQuery = `
+    SELECT 
+      table_name as view_name,
+      table_schema as schema_name,
+      view_definition
+    FROM information_schema.views
+    WHERE table_schema IN (${schemaFilter})
+    ORDER BY table_schema, table_name
+  `;
+
+  const viewsResult = await pool.query(viewsQuery, schemas);
+
+  // Get columns for each view
+  const columnsQuery = `
+    SELECT 
+      c.table_name as view_name,
+      c.table_schema as schema_name,
+      c.column_name,
+      c.ordinal_position,
+      c.data_type,
+      c.udt_name,
+      c.character_maximum_length,
+      c.numeric_precision,
+      c.numeric_scale,
+      c.datetime_precision,
+      c.is_nullable,
+      c.column_default,
+      COALESCE(
+        (
+          SELECT array_length(string_to_array(udt_name, '_'), 1) - 1
+          FROM information_schema.element_types e
+          WHERE e.object_schema = c.table_schema
+            AND e.object_name = c.table_name
+            AND e.collection_type_identifier = c.dtd_identifier
+        ),
+        0
+      ) as array_dimensions
+    FROM information_schema.columns c
+    WHERE c.table_schema IN (${schemaFilter})
+      AND c.table_name IN (
+        SELECT table_name 
+        FROM information_schema.views 
+        WHERE table_schema IN (${schemaFilter})
+      )
+    ORDER BY c.table_schema, c.table_name, c.ordinal_position
+  `;
+
+  const columnsResult = await pool.query(columnsQuery, schemas);
+
+  const views: ViewMetadata[] = viewsResult.rows.map((row) => ({
+    viewName: row.view_name,
+    schemaName: row.schema_name,
+    viewDefinition: row.view_definition,
+    columns: [],
+  }));
+
+  // Add columns to views
+  for (const row of columnsResult.rows) {
+    const view = views.find(
+      (v) => v.viewName === row.view_name && v.schemaName === row.schema_name
+    );
+    if (view) {
+      view.columns.push({
+        columnName: row.column_name,
+        dataType: row.data_type,
+        udtName: row.udt_name,
+        isNullable: row.is_nullable === 'YES',
+        columnDefault: row.column_default,
+        ordinalPosition: row.ordinal_position,
+        characterMaximumLength: row.character_maximum_length,
+        numericPrecision: row.numeric_precision,
+        numericScale: row.numeric_scale,
+        datetimePrecision: row.datetime_precision,
+        arrayDimensions: row.array_dimensions,
+        isIdentity: false,
+        identityGeneration: null,
+        isGenerated: false,
+        generationExpression: null,
+        checkConstraints: [],
+      });
+    }
+  }
+
+  return views;
+}
+
+/**
+ * Introspect database routines (functions and procedures)
+ */
+async function introspectRoutines(
+  pool: pg.Pool,
+  schemas: string[]
+): Promise<RoutineMetadata[]> {
+  const schemaFilter = schemas.map((_, i) => `$${i + 1}`).join(', ');
+
+  // Get routine definitions
+  const routinesQuery = `
+    SELECT 
+      r.routine_name,
+      r.routine_schema as schema_name,
+      r.routine_type,
+      r.security_type,
+      r.data_type as return_type,
+      CASE 
+        WHEN r.data_type = 'USER-DEFINED' THEN r.type_udt_name
+        ELSE r.data_type
+      END as return_udt_name,
+      CASE
+        WHEN r.data_type = 'ARRAY' THEN true
+        ELSE false
+      END as returns_set
+    FROM information_schema.routines r
+    WHERE r.routine_schema IN (${schemaFilter})
+    ORDER BY r.routine_schema, r.routine_name
+  `;
+
+  const routinesResult = await pool.query(routinesQuery, schemas);
+
+  // Get parameters for each routine
+  const parametersQuery = `
+    SELECT 
+      p.specific_name,
+      r.routine_name,
+      r.routine_schema as schema_name,
+      p.parameter_name,
+      p.parameter_mode,
+      p.ordinal_position,
+      p.data_type,
+      CASE 
+        WHEN p.data_type = 'ARRAY' THEN p.udt_name
+        WHEN p.data_type = 'USER-DEFINED' THEN p.udt_name
+        ELSE p.data_type
+      END as udt_name,
+      CASE
+        WHEN p.parameter_mode = 'OUT' OR p.parameter_mode = 'INOUT' THEN 'YES'
+        ELSE 'NO'
+      END as is_nullable
+    FROM information_schema.parameters p
+    JOIN information_schema.routines r ON p.specific_name = r.specific_name
+    WHERE r.routine_schema IN (${schemaFilter})
+      AND p.parameter_mode IS NOT NULL
+    ORDER BY r.routine_schema, r.routine_name, p.ordinal_position
+  `;
+
+  const parametersResult = await pool.query(parametersQuery, schemas);
+
+  const routines: RoutineMetadata[] = routinesResult.rows.map((row) => ({
+    routineName: row.routine_name,
+    schemaName: row.schema_name,
+    routineType: row.routine_type as 'FUNCTION' | 'PROCEDURE',
+    securityType: row.security_type as 'DEFINER' | 'INVOKER',
+    returnType: row.return_type,
+    returnUdtName: row.return_udt_name,
+    returnsSet: row.returns_set,
+    parameters: [],
+  }));
+
+  // Add parameters to routines
+  for (const row of parametersResult.rows) {
+    const routine = routines.find(
+      (r) => r.routineName === row.routine_name && r.schemaName === row.schema_name
+    );
+    if (routine) {
+      routine.parameters.push({
+        parameterName: row.parameter_name || `param${row.ordinal_position}`,
+        dataType: row.data_type,
+        udtName: row.udt_name,
+        parameterMode: row.parameter_mode,
+        ordinalPosition: row.ordinal_position,
+        isNullable: row.is_nullable === 'YES',
+      });
+    }
+  }
+
+  return routines;
 }
