@@ -54,8 +54,14 @@ function mapBaseTypeToZod(
   options: SchemaGenerationOptions,
   warnings: string[]
 ): string {
-  const udtName = column.udtName;
+  let udtName = column.udtName;
   const dataType = column.dataType.toLowerCase();
+
+  // PostgreSQL array types have underscore prefix (e.g., _text for text[], _int4 for integer[])
+  // Strip the underscore to get the actual base type name
+  if (column.isArray && udtName.startsWith('_')) {
+    udtName = udtName.substring(1);
+  }
 
   // Custom type mappings
   if (options.customTypeMappings?.[udtName]) {
@@ -87,8 +93,11 @@ function mapBaseTypeToZod(
     return `${schemaPrefix}${rangeName}Schema`;
   }
 
-  // Map by data type
-  switch (dataType) {
+  // Map by data type or by udtName for arrays
+  // For arrays, dataType will be 'ARRAY' so we need to check the udtName
+  const typeToCheck = dataType === 'array' ? udtName : dataType;
+  
+  switch (typeToCheck) {
     // Numeric types
     case 'smallint':
     case 'integer':
