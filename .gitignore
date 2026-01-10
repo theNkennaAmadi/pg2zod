@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-pnpm-lock.yaml
+# pnpm-lock.yaml - Keep this committed for CI
 package-lock.json
 yarn.lock
 
