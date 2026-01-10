@@ -525,17 +525,13 @@ async function introspectViews(
         udtName: row.udt_name,
         isNullable: row.is_nullable === 'YES',
         columnDefault: row.column_default,
-        ordinalPosition: row.ordinal_position,
         characterMaximumLength: row.character_maximum_length,
         numericPrecision: row.numeric_precision,
         numericScale: row.numeric_scale,
         datetimePrecision: row.datetime_precision,
         arrayDimensions: row.array_dimensions,
-        isIdentity: false,
-        identityGeneration: null,
-        isGenerated: false,
-        generationExpression: null,
-        checkConstraints: [],
+        domainName: null,
+        isArray: row.array_dimensions > 0,
       });
     }
   }
