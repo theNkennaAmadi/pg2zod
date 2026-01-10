@@ -1,0 +1,41 @@
+# Source files
+src/
+*.ts
+!*.d.ts
+!*.d.cts
+!*.d.mts
+tsconfig.json
+
+# Development
+.github/
+.changeset/
+node_modules/
+pnpm-lock.yaml
+*.log
+
+# Tests
+*.test.js
+*.spec.js
+*.spec.ts
+
+# Examples
+example-schema.sql
+
+# Documentation (keep in package)
+# README.md
+# LICENSE
+# CHANGELOG.md
+
+# Project files
+.git/
+.gitignore
+.eslintrc*
+.prettierrc*
+*.tsbuildinfo
+
+# Summaries
+PROJECT_SUMMARY.md
+GETTING_STARTED.md
+ZOD_V4_UPDATES.md
+WARP.md
+PUBLISHING.md

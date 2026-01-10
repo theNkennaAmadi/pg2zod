@@ -1,27 +1,39 @@
 {
   "name": "pg-to-zod",
   "version": "1.0.0",
-  "type": "module",
   "description": "Introspect PostgreSQL databases and generate strict, comprehensive Zod v4 schemas with full type coverage",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
     "pg-to-zod": "./dist/cli.js"
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "test": "node --test dist/**/*.test.js",
-    "prepublishOnly": "npm run build"
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish",
+    "prepublishOnly": "pnpm build"
   },
   "keywords": [
     "postgresql",
@@ -32,17 +44,34 @@
     "introspection",
     "database",
     "typescript",
-    "codegen"
+    "codegen",
+    "type-generation",
+    "orm",
+    "prisma-alternative"
   ],
-  "author": "",
+  "author": "TBP",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theNkennaAmadi/pg-to-zod.git"
+  },
+  "bugs": {
+    "url": "https://github.com/theNkennaAmadi/pg-to-zod/issues"
+  },
+  "homepage": "https://github.com/theNkennaAmadi/pg-to-zod#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dependencies": {
     "pg": "^8.16.3",
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@types/node": "^22.10.5",
     "@types/pg": "^8.11.10",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.2"
   },
   "engines": {
