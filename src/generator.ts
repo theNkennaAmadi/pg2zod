@@ -900,33 +900,56 @@ function generateDatabaseType(result: GenerationResult, metadata: DatabaseMetada
 
         output += `  ${schemaName}: {\n`;
 
-        // Tables
+        // Tables - always include
+        output += `    Tables: {\n`;
         if (entities.tables.length > 0) {
-            output += `    Tables: {\n`;
             for (const table of entities.tables) {
+                // Get relationships for this table from metadata
+                const tableMetadata = metadata.tables.find(
+                    t => t.tableName === table.tableName && t.schemaName === table.schemaName
+                );
+                const relationships = tableMetadata?.relationships || [];
+                
                 output += `      ${table.tableName}: {\n`;
                 output += `        Row: ${table.name};\n`;
                 output += `        Insert: ${table.name}Insert;\n`;
                 output += `        Update: ${table.name}Update;\n`;
+                output += `        Relationships: [\n`;
+                if (relationships.length > 0) {
+                    for (const rel of relationships) {
+                        output += `          {\n`;
+                        output += `            foreignKeyName: "${rel.foreignKeyName}"\n`;
+                        output += `            columns: [${rel.columns.map(c => `"${c}"`).join(", ")}]\n`;
+                        output += `            isOneToOne: ${rel.isOneToOne}\n`;
+                        output += `            referencedRelation: "${rel.referencedRelation}"\n`;
+                        output += `            referencedColumns: [${rel.referencedColumns.map(c => `"${c}"`).join(", ")}]\n`;
+                        output += `          },\n`;
+                    }
+                }
+                output += `        ];\n`;
                 output += `      };\n`;
             }
-            output += `    };\n`;
+        } else {
+            output += `      [_ in never]: never\n`;
         }
+        output += `    };\n`;
 
-        // Views
+        // Views - always include
+        output += `    Views: {\n`;
         if (entities.views.length > 0) {
-            output += `    Views: {\n`;
             for (const view of entities.views) {
                 output += `      ${view.viewName}: {\n`;
                 output += `        Row: ${view.name};\n`;
                 output += `      };\n`;
             }
-            output += `    };\n`;
+        } else {
+            output += `      [_ in never]: never\n`;
         }
+        output += `    };\n`;
 
-        // Functions
+        // Functions - always include
+        output += `    Functions: {\n`;
         if (entities.routines.length > 0) {
-            output += `    Functions: {\n`;
             for (const routine of entities.routines) {
                 const routineName = routine.routineName.replace(/^[A-Z]/, (c) => c.toLowerCase());
                 output += `      ${routineName}: {\n`;
@@ -947,26 +970,32 @@ function generateDatabaseType(result: GenerationResult, metadata: DatabaseMetada
                 
                 output += `      };\n`;
             }
-            output += `    };\n`;
+        } else {
+            output += `      [_ in never]: never\n`;
         }
+        output += `    };\n`;
 
-        // Enums
+        // Enums - always include
+        output += `    Enums: {\n`;
         if (entities.enums.length > 0) {
-            output += `    Enums: {\n`;
             for (const enumType of entities.enums) {
                 output += `      ${enumType.enumName.replace(/^[A-Z]/, (c) => c.toLowerCase())}: ${enumType.name};\n`;
             }
-            output += `    };\n`;
+        } else {
+            output += `      [_ in never]: never\n`;
         }
+        output += `    };\n`;
 
-        // Composite Types
+        // Composite Types - always include
+        output += `    CompositeTypes: {\n`;
         if (entities.compositeTypes.length > 0) {
-            output += `    CompositeTypes: {\n`;
             for (const compositeType of entities.compositeTypes) {
                 output += `      ${compositeType.typeName.replace(/^[A-Z]/, (c) => c.toLowerCase())}: ${compositeType.name};\n`;
             }
-            output += `    };\n`;
+        } else {
+            output += `      [_ in never]: never\n`;
         }
+        output += `    };\n`;
 
         output += `  };\n`;
     }

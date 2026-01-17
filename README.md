@@ -307,11 +307,21 @@ export interface Database {
         Row: PublicUsers;
         Insert: PublicUsersInsert;
         Update: PublicUsersUpdate;
+        Relationships: [];  // No foreign keys
       };
       posts: {
         Row: PublicPosts;
         Insert: PublicPostsInsert;
         Update: PublicPostsUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ];
       };
     };
     Views: {
@@ -345,6 +355,8 @@ export interface Database {
 }
 ```
 
+**Note:** All sections (Tables, Views, Functions, Enums, CompositeTypes) are always present in the Database interface, even if empty. Empty sections use `[_ in never]: never` type.
+
 **Usage:**
 
 ```typescript
@@ -353,6 +365,9 @@ import { Database } from './schema';
 // Access table types
 type User = Database['public']['Tables']['users']['Row'];
 type UserInsert = Database['public']['Tables']['users']['Insert'];
+
+// Access relationships
+type PostRelationships = Database['public']['Tables']['posts']['Relationships'];
 
 // Access view types
 type UserStats = Database['public']['Views']['user_stats']['Row'];

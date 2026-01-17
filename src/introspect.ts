@@ -154,6 +154,41 @@ async function introspectTables(
 
   const uniqueConstraintsResult = await pool.query(uniqueConstraintsQuery, schemas);
 
+  // Get foreign key relationships
+  const foreignKeysQuery = `
+    SELECT 
+      tc.table_schema,
+      tc.table_name,
+      tc.constraint_name AS foreign_key_name,
+      array_agg(kcu.column_name ORDER BY kcu.ordinal_position) AS columns,
+      ccu.table_name AS referenced_table,
+      array_agg(ccu.column_name ORDER BY kcu.ordinal_position) AS referenced_columns,
+      -- Check if it's one-to-one (FK columns are also unique)
+      EXISTS(
+        SELECT 1 
+        FROM information_schema.table_constraints uc
+        JOIN information_schema.key_column_usage ukcu 
+          ON uc.constraint_name = ukcu.constraint_name
+          AND uc.table_schema = ukcu.table_schema
+        WHERE uc.constraint_type = 'UNIQUE'
+          AND uc.table_schema = tc.table_schema
+          AND uc.table_name = tc.table_name
+          AND ukcu.column_name = ANY(array_agg(kcu.column_name))
+      ) AS is_one_to_one
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage ccu
+      ON tc.constraint_name = ccu.constraint_name
+      AND tc.table_schema = ccu.constraint_schema
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND tc.table_schema IN (${schemaFilter})
+    GROUP BY tc.table_schema, tc.table_name, tc.constraint_name, ccu.table_name
+  `;
+
+  const foreignKeysResult = await pool.query(foreignKeysQuery, schemas);
+
   // Group by table
   const tableMap = new Map<string, TableMetadata>();
 
@@ -168,6 +203,7 @@ async function introspectTables(
         checkConstraints: [],
         primaryKeys: [],
         uniqueConstraints: [],
+        relationships: [],
       });
     }
 
@@ -220,6 +256,25 @@ async function introspectTables(
       table.uniqueConstraints.push({
         constraintName: row.constraint_name,
         columns: row.columns,
+      });
+    }
+  }
+
+  // Add foreign key relationships
+  for (const row of foreignKeysResult.rows) {
+    const tableKey = `${row.table_schema}.${row.table_name}`;
+    const table = tableMap.get(tableKey);
+    if (table) {
+      // Parse array columns (they come as PostgreSQL arrays)
+      const columns = Array.isArray(row.columns) ? row.columns : [];
+      const referencedColumns = Array.isArray(row.referenced_columns) ? row.referenced_columns : [];
+      
+      table.relationships.push({
+        foreignKeyName: row.foreign_key_name,
+        columns,
+        isOneToOne: row.is_one_to_one,
+        referencedRelation: row.referenced_table,
+        referencedColumns,
       });
     }
   }

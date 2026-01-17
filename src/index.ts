@@ -14,6 +14,7 @@ export type {
     RangeTypeMetadata,
     DomainMetadata,
     CheckConstraintMetadata,
+    RelationshipMetadata,
     GeneratedSchema,
 } from './types.js';
 

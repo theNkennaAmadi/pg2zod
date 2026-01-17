@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.2.2
+
+### Patch Changes
+
+- **New Features:**
+
+  - Added foreign key relationship introspection and metadata to Database type interface
+  - Each table in the Database type now includes a `Relationships` array with foreign key information (foreignKeyName, columns, isOneToOne, referencedRelation, referencedColumns)
+  - Database type sections (Tables, Views, Functions, Enums, CompositeTypes) are now always present even when empty, using `[_ in never]: never` for empty sections
+  - Relationships array is always present for each table, showing `[]` if no foreign keys exist
+
+  **Improvements:**
+
+  - Database type structure now consistently matches Supabase's type generator format
+  - Better type safety with always-present sections in Database interface
+  - Fixed array parsing for relationship columns from PostgreSQL queries
+
 ## 2.2.1
 
 ### Patch Changes

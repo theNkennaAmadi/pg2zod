@@ -84,6 +84,17 @@ export interface DomainMetadata {
 }
 
 /**
+ * Foreign key relationship metadata
+ */
+export interface RelationshipMetadata {
+  foreignKeyName: string;
+  columns: string[];
+  isOneToOne: boolean;
+  referencedRelation: string;
+  referencedColumns: string[];
+}
+
+/**
  * Table metadata
  */
 export interface TableMetadata {
@@ -96,6 +107,7 @@ export interface TableMetadata {
     constraintName: string;
     columns: string[];
   }>;
+  relationships: RelationshipMetadata[];
 }
 
 /**
