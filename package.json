@@ -55,7 +55,8 @@
   "homepage": "https://github.com/theNkennaAmadi/pg2zod#readme",
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
   },
   "dependencies": {
     "pg": "^8.16.3",
