@@ -1831,19 +1831,25 @@ export const PublicUploadSessionsUpdateSchema = PublicUploadSessionsSchema.parti
 export type PublicUploadSessionsUpdate = z.infer<typeof PublicUploadSessionsUpdateSchema>;
 
 // ============================================
-// Routines (Functions/Procedures)
+// Views
 // ============================================
 
-/** FUNCTION: public.bytea_to_text */
-export const PublicByteaToTextParamsSchema = z.object({
-  /** bytea (IN) */
-  data: z.instanceof(Buffer),
+/** View: public.person_summary (read-only) */
+export const PublicPersonSummaryViewSchema = z.object({
+  /** uuid */
+  id: z.uuid().nullable(),
+  /** text */
+  first_name: z.string().nullable(),
+  /** text */
+  last_name: z.string().nullable(),
+  /** text */
+  email: z.string().nullable(),
 });
-export type PublicByteaToTextParams = z.infer<typeof PublicByteaToTextParamsSchema>;
+export type PublicPersonSummaryView = z.infer<typeof PublicPersonSummaryViewSchema>;
 
-/** Returns: text */
-export const PublicByteaToTextReturnSchema = z.string();
-export type PublicByteaToTextReturn = z.infer<typeof PublicByteaToTextReturnSchema>;
+// ============================================
+// Routines (Functions/Procedures)
+// ============================================
 
 /** FUNCTION: public.can_asset */
 export const PublicCanAssetParamsSchema = z.object({
@@ -1925,21 +1931,6 @@ export type PublicCanScopeParams = z.infer<typeof PublicCanScopeParamsSchema>;
 export const PublicCanScopeReturnSchema = z.boolean();
 export type PublicCanScopeReturn = z.infer<typeof PublicCanScopeReturnSchema>;
 
-/** FUNCTION: public.can_scope_many */
-export const PublicCanScopeManyParamsSchema = z.object({
-  /** text (IN) */
-  p_scope: z.string(),
-  /** text (IN) */
-  p_id: z.string(),
-  /** ARRAY (IN) */
-  p_actions: z.array(PublicPermissionActionSchema),
-});
-export type PublicCanScopeManyParams = z.infer<typeof PublicCanScopeManyParamsSchema>;
-
-/** Returns: jsonb */
-export const PublicCanScopeManyReturnSchema = z.record(z.string(), z.unknown());
-export type PublicCanScopeManyReturn = z.infer<typeof PublicCanScopeManyReturnSchema>;
-
 /** FUNCTION: public.can_team */
 export const PublicCanTeamParamsSchema = z.object({
   /** text (IN) */
@@ -1952,253 +1943,6 @@ export type PublicCanTeamParams = z.infer<typeof PublicCanTeamParamsSchema>;
 /** Returns: boolean */
 export const PublicCanTeamReturnSchema = z.boolean();
 export type PublicCanTeamReturn = z.infer<typeof PublicCanTeamReturnSchema>;
-
-/** FUNCTION: public.cash_dist */
-export const PublicCashDistParamsSchema = z.object({
-  /** money (IN) */
-  param1: z.string().regex(/^\$?[0-9,]+(\.\d{2})?$/),
-  /** money (IN) */
-  param2: z.string().regex(/^\$?[0-9,]+(\.\d{2})?$/),
-});
-export type PublicCashDistParams = z.infer<typeof PublicCashDistParamsSchema>;
-
-/** Returns: money */
-export const PublicCashDistReturnSchema = z.string().regex(/^\$?[0-9,]+(\.\d{2})?$/);
-export type PublicCashDistReturn = z.infer<typeof PublicCashDistReturnSchema>;
-
-/** FUNCTION: public.date_dist */
-export const PublicDateDistParamsSchema = z.object({
-  /** date (IN) */
-  param1: z.date(),
-  /** date (IN) */
-  param2: z.date(),
-});
-export type PublicDateDistParams = z.infer<typeof PublicDateDistParamsSchema>;
-
-/** Returns: integer */
-export const PublicDateDistReturnSchema = z.number().int();
-export type PublicDateDistReturn = z.infer<typeof PublicDateDistReturnSchema>;
-
-/** FUNCTION: public.float4_dist */
-export const PublicFloat4DistParamsSchema = z.object({
-  /** real (IN) */
-  param1: z.number(),
-  /** real (IN) */
-  param2: z.number(),
-});
-export type PublicFloat4DistParams = z.infer<typeof PublicFloat4DistParamsSchema>;
-
-/** Returns: real */
-export const PublicFloat4DistReturnSchema = z.number();
-export type PublicFloat4DistReturn = z.infer<typeof PublicFloat4DistReturnSchema>;
-
-/** FUNCTION: public.float8_dist */
-export const PublicFloat8DistParamsSchema = z.object({
-  /** double precision (IN) */
-  param1: z.number(),
-  /** double precision (IN) */
-  param2: z.number(),
-});
-export type PublicFloat8DistParams = z.infer<typeof PublicFloat8DistParamsSchema>;
-
-/** Returns: double precision */
-export const PublicFloat8DistReturnSchema = z.number();
-export type PublicFloat8DistReturn = z.infer<typeof PublicFloat8DistReturnSchema>;
-
-/** FUNCTION: public.gen_random_ksuid_microsecond */
-/** Returns: text */
-export const PublicGenRandomKsuidMicrosecondReturnSchema = z.string();
-export type PublicGenRandomKsuidMicrosecondReturn = z.infer<typeof PublicGenRandomKsuidMicrosecondReturnSchema>;
-
-/** FUNCTION: public.gen_random_ksuid_second */
-/** Returns: text */
-export const PublicGenRandomKsuidSecondReturnSchema = z.string();
-export type PublicGenRandomKsuidSecondReturn = z.infer<typeof PublicGenRandomKsuidSecondReturnSchema>;
-
-/** FUNCTION: public.gen_random_uuid_v6 */
-/** Returns: uuid */
-export const PublicGenRandomUuidV6ReturnSchema = z.uuid();
-export type PublicGenRandomUuidV6Return = z.infer<typeof PublicGenRandomUuidV6ReturnSchema>;
-
-/** FUNCTION: public.gen_random_uuid_v7 */
-/** Returns: uuid */
-export const PublicGenRandomUuidV7ReturnSchema = z.uuid();
-export type PublicGenRandomUuidV7Return = z.infer<typeof PublicGenRandomUuidV7ReturnSchema>;
-
-/** FUNCTION: public.generate_booking_ref_base36 */
-export const PublicGenerateBookingRefBase36ParamsSchema = z.object({
-  /** bytea (IN) */
-  bytes: z.instanceof(Buffer),
-});
-export type PublicGenerateBookingRefBase36Params = z.infer<typeof PublicGenerateBookingRefBase36ParamsSchema>;
-
-/** Returns: character */
-export const PublicGenerateBookingRefBase36ReturnSchema = z.string();
-export type PublicGenerateBookingRefBase36Return = z.infer<typeof PublicGenerateBookingRefBase36ReturnSchema>;
-
-/** FUNCTION: public.generate_unique_booking_ref */
-/** Returns: character */
-export const PublicGenerateUniqueBookingRefReturnSchema = z.string();
-export type PublicGenerateUniqueBookingRefReturn = z.infer<typeof PublicGenerateUniqueBookingRefReturnSchema>;
-
-/** FUNCTION: public.http */
-export const PublicHttpParamsSchema = z.object({
-  /** USER-DEFINED (IN) */
-  request: PublicHttpRequestCompositeSchema,
-});
-export type PublicHttpParams = z.infer<typeof PublicHttpParamsSchema>;
-
-/** Returns: USER-DEFINED */
-export const PublicHttpReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpReturn = z.infer<typeof PublicHttpReturnSchema>;
-
-/** FUNCTION: public.http_delete */
-/** Returns: USER-DEFINED */
-export const PublicHttpDeleteReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpDeleteReturn = z.infer<typeof PublicHttpDeleteReturnSchema>;
-
-/** FUNCTION: public.http_get */
-/** Returns: USER-DEFINED */
-export const PublicHttpGetReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpGetReturn = z.infer<typeof PublicHttpGetReturnSchema>;
-
-/** FUNCTION: public.http_head */
-export const PublicHttpHeadParamsSchema = z.object({
-  /** character varying (IN) */
-  uri: z.string(),
-});
-export type PublicHttpHeadParams = z.infer<typeof PublicHttpHeadParamsSchema>;
-
-/** Returns: USER-DEFINED */
-export const PublicHttpHeadReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpHeadReturn = z.infer<typeof PublicHttpHeadReturnSchema>;
-
-/** FUNCTION: public.http_header */
-export const PublicHttpHeaderParamsSchema = z.object({
-  /** character varying (IN) */
-  field: z.string(),
-  /** character varying (IN) */
-  value: z.string(),
-});
-export type PublicHttpHeaderParams = z.infer<typeof PublicHttpHeaderParamsSchema>;
-
-/** Returns: USER-DEFINED */
-export const PublicHttpHeaderReturnSchema = PublicHttpHeaderCompositeSchema;
-export type PublicHttpHeaderReturn = z.infer<typeof PublicHttpHeaderReturnSchema>;
-
-/** FUNCTION: public.http_list_curlopt */
-export const PublicHttpListCurloptReturnSchema = z.object({
-  /** text (OUT) */
-  curlopt: z.string().nullable(),
-  /** text (OUT) */
-  value: z.string().nullable(),
-});
-export type PublicHttpListCurloptReturn = z.infer<typeof PublicHttpListCurloptReturnSchema>;
-
-/** FUNCTION: public.http_patch */
-export const PublicHttpPatchParamsSchema = z.object({
-  /** character varying (IN) */
-  uri: z.string(),
-  /** character varying (IN) */
-  content: z.string(),
-  /** character varying (IN) */
-  content_type: z.string(),
-});
-export type PublicHttpPatchParams = z.infer<typeof PublicHttpPatchParamsSchema>;
-
-/** Returns: USER-DEFINED */
-export const PublicHttpPatchReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpPatchReturn = z.infer<typeof PublicHttpPatchReturnSchema>;
-
-/** FUNCTION: public.http_post */
-/** Returns: USER-DEFINED */
-export const PublicHttpPostReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpPostReturn = z.infer<typeof PublicHttpPostReturnSchema>;
-
-/** FUNCTION: public.http_put */
-export const PublicHttpPutParamsSchema = z.object({
-  /** character varying (IN) */
-  uri: z.string(),
-  /** character varying (IN) */
-  content: z.string(),
-  /** character varying (IN) */
-  content_type: z.string(),
-});
-export type PublicHttpPutParams = z.infer<typeof PublicHttpPutParamsSchema>;
-
-/** Returns: USER-DEFINED */
-export const PublicHttpPutReturnSchema = PublicHttpResponseCompositeSchema;
-export type PublicHttpPutReturn = z.infer<typeof PublicHttpPutReturnSchema>;
-
-/** FUNCTION: public.http_reset_curlopt */
-/** Returns: boolean */
-export const PublicHttpResetCurloptReturnSchema = z.boolean();
-export type PublicHttpResetCurloptReturn = z.infer<typeof PublicHttpResetCurloptReturnSchema>;
-
-/** FUNCTION: public.http_set_curlopt */
-export const PublicHttpSetCurloptParamsSchema = z.object({
-  /** character varying (IN) */
-  curlopt: z.string(),
-  /** character varying (IN) */
-  value: z.string(),
-});
-export type PublicHttpSetCurloptParams = z.infer<typeof PublicHttpSetCurloptParamsSchema>;
-
-/** Returns: boolean */
-export const PublicHttpSetCurloptReturnSchema = z.boolean();
-export type PublicHttpSetCurloptReturn = z.infer<typeof PublicHttpSetCurloptReturnSchema>;
-
-/** FUNCTION: public.int2_dist */
-export const PublicInt2DistParamsSchema = z.object({
-  /** smallint (IN) */
-  param1: z.number().int(),
-  /** smallint (IN) */
-  param2: z.number().int(),
-});
-export type PublicInt2DistParams = z.infer<typeof PublicInt2DistParamsSchema>;
-
-/** Returns: smallint */
-export const PublicInt2DistReturnSchema = z.number().int();
-export type PublicInt2DistReturn = z.infer<typeof PublicInt2DistReturnSchema>;
-
-/** FUNCTION: public.int4_dist */
-export const PublicInt4DistParamsSchema = z.object({
-  /** integer (IN) */
-  param1: z.number().int(),
-  /** integer (IN) */
-  param2: z.number().int(),
-});
-export type PublicInt4DistParams = z.infer<typeof PublicInt4DistParamsSchema>;
-
-/** Returns: integer */
-export const PublicInt4DistReturnSchema = z.number().int();
-export type PublicInt4DistReturn = z.infer<typeof PublicInt4DistReturnSchema>;
-
-/** FUNCTION: public.int8_dist */
-export const PublicInt8DistParamsSchema = z.object({
-  /** bigint (IN) */
-  param1: z.bigint(),
-  /** bigint (IN) */
-  param2: z.bigint(),
-});
-export type PublicInt8DistParams = z.infer<typeof PublicInt8DistParamsSchema>;
-
-/** Returns: bigint */
-export const PublicInt8DistReturnSchema = z.bigint();
-export type PublicInt8DistReturn = z.infer<typeof PublicInt8DistReturnSchema>;
-
-/** FUNCTION: public.interval_dist */
-export const PublicIntervalDistParamsSchema = z.object({
-  /** interval (IN) */
-  param1: z.iso.duration(),
-  /** interval (IN) */
-  param2: z.iso.duration(),
-});
-export type PublicIntervalDistParams = z.infer<typeof PublicIntervalDistParamsSchema>;
-
-/** Returns: interval */
-export const PublicIntervalDistReturnSchema = z.iso.duration();
-export type PublicIntervalDistReturn = z.infer<typeof PublicIntervalDistReturnSchema>;
 
 /** FUNCTION: public.log_permission_audit */
 export const PublicLogPermissionAuditParamsSchema = z.object({
@@ -2216,306 +1960,217 @@ export const PublicLogPermissionAuditParamsSchema = z.object({
 export type PublicLogPermissionAuditParams = z.infer<typeof PublicLogPermissionAuditParamsSchema>;
 
 
-/** FUNCTION: public.oid_dist */
-export const PublicOidDistParamsSchema = z.object({
-  /** oid (IN) */
-  param1: z.number().int().positive(),
-  /** oid (IN) */
-  param2: z.number().int().positive(),
-});
-export type PublicOidDistParams = z.infer<typeof PublicOidDistParamsSchema>;
+// ============================================
+// Database Types
+// ============================================
 
-/** Returns: oid */
-export const PublicOidDistReturnSchema = z.number().int().positive();
-export type PublicOidDistReturn = z.infer<typeof PublicOidDistReturnSchema>;
-
-/** FUNCTION: public.preset_caps */
-export const PublicPresetCapsParamsSchema = z.object({
-  /** USER-DEFINED (IN) */
-  p: z.unknown() /* unmapped type */,
-});
-export type PublicPresetCapsParams = z.infer<typeof PublicPresetCapsParamsSchema>;
-
-/** Returns: jsonb */
-export const PublicPresetCapsReturnSchema = z.record(z.string(), z.unknown());
-export type PublicPresetCapsReturn = z.infer<typeof PublicPresetCapsReturnSchema>;
-
-/** FUNCTION: public.set_limit */
-export const PublicSetLimitParamsSchema = z.object({
-  /** real (IN) */
-  param1: z.number(),
-});
-export type PublicSetLimitParams = z.infer<typeof PublicSetLimitParamsSchema>;
-
-/** Returns: real */
-export const PublicSetLimitReturnSchema = z.number();
-export type PublicSetLimitReturn = z.infer<typeof PublicSetLimitReturnSchema>;
-
-/** FUNCTION: public.show_limit */
-/** Returns: real */
-export const PublicShowLimitReturnSchema = z.number();
-export type PublicShowLimitReturn = z.infer<typeof PublicShowLimitReturnSchema>;
-
-/** FUNCTION: public.show_trgm */
-export const PublicShowTrgmParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-});
-export type PublicShowTrgmParams = z.infer<typeof PublicShowTrgmParamsSchema>;
-
-/** Returns: ARRAY */
-export const PublicShowTrgmReturnSchema = z.array(z.array(z.unknown() /* unmapped type */));
-export type PublicShowTrgmReturn = z.infer<typeof PublicShowTrgmReturnSchema>;
-
-/** FUNCTION: public.similarity */
-export const PublicSimilarityParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicSimilarityParams = z.infer<typeof PublicSimilarityParamsSchema>;
-
-/** Returns: real */
-export const PublicSimilarityReturnSchema = z.number();
-export type PublicSimilarityReturn = z.infer<typeof PublicSimilarityReturnSchema>;
-
-/** FUNCTION: public.similarity_dist */
-export const PublicSimilarityDistParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicSimilarityDistParams = z.infer<typeof PublicSimilarityDistParamsSchema>;
-
-/** Returns: real */
-export const PublicSimilarityDistReturnSchema = z.number();
-export type PublicSimilarityDistReturn = z.infer<typeof PublicSimilarityDistReturnSchema>;
-
-/** FUNCTION: public.similarity_op */
-export const PublicSimilarityOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicSimilarityOpParams = z.infer<typeof PublicSimilarityOpParamsSchema>;
-
-/** Returns: boolean */
-export const PublicSimilarityOpReturnSchema = z.boolean();
-export type PublicSimilarityOpReturn = z.infer<typeof PublicSimilarityOpReturnSchema>;
-
-/** FUNCTION: public.strict_word_similarity */
-export const PublicStrictWordSimilarityParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicStrictWordSimilarityParams = z.infer<typeof PublicStrictWordSimilarityParamsSchema>;
-
-/** Returns: real */
-export const PublicStrictWordSimilarityReturnSchema = z.number();
-export type PublicStrictWordSimilarityReturn = z.infer<typeof PublicStrictWordSimilarityReturnSchema>;
-
-/** FUNCTION: public.strict_word_similarity_commutator_op */
-export const PublicStrictWordSimilarityCommutatorOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicStrictWordSimilarityCommutatorOpParams = z.infer<typeof PublicStrictWordSimilarityCommutatorOpParamsSchema>;
-
-/** Returns: boolean */
-export const PublicStrictWordSimilarityCommutatorOpReturnSchema = z.boolean();
-export type PublicStrictWordSimilarityCommutatorOpReturn = z.infer<typeof PublicStrictWordSimilarityCommutatorOpReturnSchema>;
-
-/** FUNCTION: public.strict_word_similarity_dist_commutator_op */
-export const PublicStrictWordSimilarityDistCommutatorOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicStrictWordSimilarityDistCommutatorOpParams = z.infer<typeof PublicStrictWordSimilarityDistCommutatorOpParamsSchema>;
-
-/** Returns: real */
-export const PublicStrictWordSimilarityDistCommutatorOpReturnSchema = z.number();
-export type PublicStrictWordSimilarityDistCommutatorOpReturn = z.infer<typeof PublicStrictWordSimilarityDistCommutatorOpReturnSchema>;
-
-/** FUNCTION: public.strict_word_similarity_dist_op */
-export const PublicStrictWordSimilarityDistOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicStrictWordSimilarityDistOpParams = z.infer<typeof PublicStrictWordSimilarityDistOpParamsSchema>;
-
-/** Returns: real */
-export const PublicStrictWordSimilarityDistOpReturnSchema = z.number();
-export type PublicStrictWordSimilarityDistOpReturn = z.infer<typeof PublicStrictWordSimilarityDistOpReturnSchema>;
-
-/** FUNCTION: public.strict_word_similarity_op */
-export const PublicStrictWordSimilarityOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicStrictWordSimilarityOpParams = z.infer<typeof PublicStrictWordSimilarityOpParamsSchema>;
-
-/** Returns: boolean */
-export const PublicStrictWordSimilarityOpReturnSchema = z.boolean();
-export type PublicStrictWordSimilarityOpReturn = z.infer<typeof PublicStrictWordSimilarityOpReturnSchema>;
-
-/** FUNCTION: public.team_preset */
-export const PublicTeamPresetParamsSchema = z.object({
-  /** text (IN) */
-  team_id: z.string(),
-  /** text (IN) */
-  user_id: z.string(),
-});
-export type PublicTeamPresetParams = z.infer<typeof PublicTeamPresetParamsSchema>;
-
-/** Returns: USER-DEFINED */
-export const PublicTeamPresetReturnSchema = z.unknown() /* unmapped type */;
-export type PublicTeamPresetReturn = z.infer<typeof PublicTeamPresetReturnSchema>;
-
-/** FUNCTION: public.text_to_bytea */
-export const PublicTextToByteaParamsSchema = z.object({
-  /** text (IN) */
-  data: z.string(),
-});
-export type PublicTextToByteaParams = z.infer<typeof PublicTextToByteaParamsSchema>;
-
-/** Returns: bytea */
-export const PublicTextToByteaReturnSchema = z.instanceof(Buffer);
-export type PublicTextToByteaReturn = z.infer<typeof PublicTextToByteaReturnSchema>;
-
-/** FUNCTION: public.time_dist */
-export const PublicTimeDistParamsSchema = z.object({
-  /** time without time zone (IN) */
-  param1: z.iso.time(),
-  /** time without time zone (IN) */
-  param2: z.iso.time(),
-});
-export type PublicTimeDistParams = z.infer<typeof PublicTimeDistParamsSchema>;
-
-/** Returns: interval */
-export const PublicTimeDistReturnSchema = z.iso.duration();
-export type PublicTimeDistReturn = z.infer<typeof PublicTimeDistReturnSchema>;
-
-/** FUNCTION: public.timestamp_from_uuid_v7 */
-export const PublicTimestampFromUuidV7ParamsSchema = z.object({
-  /** uuid (IN) */
-  uuid_v7: z.uuid(),
-  /** text (IN) */
-  timezone: z.string(),
-});
-export type PublicTimestampFromUuidV7Params = z.infer<typeof PublicTimestampFromUuidV7ParamsSchema>;
-
-/** Returns: timestamp without time zone */
-export const PublicTimestampFromUuidV7ReturnSchema = z.date();
-export type PublicTimestampFromUuidV7Return = z.infer<typeof PublicTimestampFromUuidV7ReturnSchema>;
-
-/** FUNCTION: public.ts_dist */
-export const PublicTsDistParamsSchema = z.object({
-  /** timestamp without time zone (IN) */
-  param1: z.date(),
-  /** timestamp without time zone (IN) */
-  param2: z.date(),
-});
-export type PublicTsDistParams = z.infer<typeof PublicTsDistParamsSchema>;
-
-/** Returns: interval */
-export const PublicTsDistReturnSchema = z.iso.duration();
-export type PublicTsDistReturn = z.infer<typeof PublicTsDistReturnSchema>;
-
-/** FUNCTION: public.tstz_dist */
-export const PublicTstzDistParamsSchema = z.object({
-  /** timestamp with time zone (IN) */
-  param1: z.date(),
-  /** timestamp with time zone (IN) */
-  param2: z.date(),
-});
-export type PublicTstzDistParams = z.infer<typeof PublicTstzDistParamsSchema>;
-
-/** Returns: interval */
-export const PublicTstzDistReturnSchema = z.iso.duration();
-export type PublicTstzDistReturn = z.infer<typeof PublicTstzDistReturnSchema>;
-
-/** FUNCTION: public.urlencode */
-/** Returns: text */
-export const PublicUrlencodeReturnSchema = z.string();
-export type PublicUrlencodeReturn = z.infer<typeof PublicUrlencodeReturnSchema>;
-
-/** FUNCTION: public.word_similarity */
-export const PublicWordSimilarityParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicWordSimilarityParams = z.infer<typeof PublicWordSimilarityParamsSchema>;
-
-/** Returns: real */
-export const PublicWordSimilarityReturnSchema = z.number();
-export type PublicWordSimilarityReturn = z.infer<typeof PublicWordSimilarityReturnSchema>;
-
-/** FUNCTION: public.word_similarity_commutator_op */
-export const PublicWordSimilarityCommutatorOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicWordSimilarityCommutatorOpParams = z.infer<typeof PublicWordSimilarityCommutatorOpParamsSchema>;
-
-/** Returns: boolean */
-export const PublicWordSimilarityCommutatorOpReturnSchema = z.boolean();
-export type PublicWordSimilarityCommutatorOpReturn = z.infer<typeof PublicWordSimilarityCommutatorOpReturnSchema>;
-
-/** FUNCTION: public.word_similarity_dist_commutator_op */
-export const PublicWordSimilarityDistCommutatorOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicWordSimilarityDistCommutatorOpParams = z.infer<typeof PublicWordSimilarityDistCommutatorOpParamsSchema>;
-
-/** Returns: real */
-export const PublicWordSimilarityDistCommutatorOpReturnSchema = z.number();
-export type PublicWordSimilarityDistCommutatorOpReturn = z.infer<typeof PublicWordSimilarityDistCommutatorOpReturnSchema>;
-
-/** FUNCTION: public.word_similarity_dist_op */
-export const PublicWordSimilarityDistOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicWordSimilarityDistOpParams = z.infer<typeof PublicWordSimilarityDistOpParamsSchema>;
-
-/** Returns: real */
-export const PublicWordSimilarityDistOpReturnSchema = z.number();
-export type PublicWordSimilarityDistOpReturn = z.infer<typeof PublicWordSimilarityDistOpReturnSchema>;
-
-/** FUNCTION: public.word_similarity_op */
-export const PublicWordSimilarityOpParamsSchema = z.object({
-  /** text (IN) */
-  param1: z.string(),
-  /** text (IN) */
-  param2: z.string(),
-});
-export type PublicWordSimilarityOpParams = z.infer<typeof PublicWordSimilarityOpParamsSchema>;
-
-/** Returns: boolean */
-export const PublicWordSimilarityOpReturnSchema = z.boolean();
-export type PublicWordSimilarityOpReturn = z.infer<typeof PublicWordSimilarityOpReturnSchema>;
+export interface Database {
+  public: {
+    Tables: {
+      asset_acl: {
+        Row: PublicAssetAcl;
+        Insert: PublicAssetAclInsert;
+        Update: PublicAssetAclUpdate;
+      };
+      asset_collections: {
+        Row: PublicAssetCollections;
+        Insert: PublicAssetCollectionsInsert;
+        Update: PublicAssetCollectionsUpdate;
+      };
+      asset_files: {
+        Row: PublicAssetFiles;
+        Insert: PublicAssetFilesInsert;
+        Update: PublicAssetFilesUpdate;
+      };
+      asset_tags: {
+        Row: PublicAssetTags;
+        Insert: PublicAssetTagsInsert;
+        Update: PublicAssetTagsUpdate;
+      };
+      asset_versions: {
+        Row: PublicAssetVersions;
+        Insert: PublicAssetVersionsInsert;
+        Update: PublicAssetVersionsUpdate;
+      };
+      assets: {
+        Row: PublicAssets;
+        Insert: PublicAssetsInsert;
+        Update: PublicAssetsUpdate;
+      };
+      blog_posts: {
+        Row: PublicBlogPosts;
+        Insert: PublicBlogPostsInsert;
+        Update: PublicBlogPostsUpdate;
+      };
+      captions: {
+        Row: PublicCaptions;
+        Insert: PublicCaptionsInsert;
+        Update: PublicCaptionsUpdate;
+      };
+      collection_acl: {
+        Row: PublicCollectionAcl;
+        Insert: PublicCollectionAclInsert;
+        Update: PublicCollectionAclUpdate;
+      };
+      collections: {
+        Row: PublicCollections;
+        Insert: PublicCollectionsInsert;
+        Update: PublicCollectionsUpdate;
+      };
+      comment_mentions: {
+        Row: PublicCommentMentions;
+        Insert: PublicCommentMentionsInsert;
+        Update: PublicCommentMentionsUpdate;
+      };
+      comment_threads: {
+        Row: PublicCommentThreads;
+        Insert: PublicCommentThreadsInsert;
+        Update: PublicCommentThreadsUpdate;
+      };
+      comments: {
+        Row: PublicComments;
+        Insert: PublicCommentsInsert;
+        Update: PublicCommentsUpdate;
+      };
+      folder_acl: {
+        Row: PublicFolderAcl;
+        Insert: PublicFolderAclInsert;
+        Update: PublicFolderAclUpdate;
+      };
+      folders: {
+        Row: PublicFolders;
+        Insert: PublicFoldersInsert;
+        Update: PublicFoldersUpdate;
+      };
+      jobs: {
+        Row: PublicJobs;
+        Insert: PublicJobsInsert;
+        Update: PublicJobsUpdate;
+      };
+      permission_audit: {
+        Row: PublicPermissionAudit;
+        Insert: PublicPermissionAuditInsert;
+        Update: PublicPermissionAuditUpdate;
+      };
+      person: {
+        Row: PublicPerson;
+        Insert: PublicPersonInsert;
+        Update: PublicPersonUpdate;
+      };
+      person_summary: {
+        Row: PublicPersonSummary;
+        Insert: PublicPersonSummaryInsert;
+        Update: PublicPersonSummaryUpdate;
+      };
+      renditions: {
+        Row: PublicRenditions;
+        Insert: PublicRenditionsInsert;
+        Update: PublicRenditionsUpdate;
+      };
+      share_links: {
+        Row: PublicShareLinks;
+        Insert: PublicShareLinksInsert;
+        Update: PublicShareLinksUpdate;
+      };
+      storage_locations: {
+        Row: PublicStorageLocations;
+        Insert: PublicStorageLocationsInsert;
+        Update: PublicStorageLocationsUpdate;
+      };
+      tags: {
+        Row: PublicTags;
+        Insert: PublicTagsInsert;
+        Update: PublicTagsUpdate;
+      };
+      thumbnails: {
+        Row: PublicThumbnails;
+        Insert: PublicThumbnailsInsert;
+        Update: PublicThumbnailsUpdate;
+      };
+      todos: {
+        Row: PublicTodos;
+        Insert: PublicTodosInsert;
+        Update: PublicTodosUpdate;
+      };
+      upload_sessions: {
+        Row: PublicUploadSessions;
+        Insert: PublicUploadSessionsInsert;
+        Update: PublicUploadSessionsUpdate;
+      };
+    };
+    Functions: {
+      canAsset: {
+        Args: PublicCanAssetParams;
+        Returns: PublicCanAssetReturn;
+      };
+      canCollection: {
+        Args: PublicCanCollectionParams;
+        Returns: PublicCanCollectionReturn;
+      };
+      canFolder: {
+        Args: PublicCanFolderParams;
+        Returns: PublicCanFolderReturn;
+      };
+      canOrganization: {
+        Args: PublicCanOrganizationParams;
+        Returns: PublicCanOrganizationReturn;
+      };
+      canProject: {
+        Args: PublicCanProjectParams;
+        Returns: PublicCanProjectReturn;
+      };
+      canScope: {
+        Args: PublicCanScopeParams;
+        Returns: PublicCanScopeReturn;
+      };
+      canTeam: {
+        Args: PublicCanTeamParams;
+        Returns: PublicCanTeamReturn;
+      };
+      logPermissionAudit: {
+        Args: PublicLogPermissionAuditParams;
+        Returns: void;
+      };
+    };
+    Enums: {
+      assetPrivacy: PublicAssetPrivacy;
+      permissionAction: PublicPermissionAction;
+      permissionScope: PublicPermissionScope;
+      shareScope: PublicShareScope;
+    };
+    CompositeTypes: {
+      assetAcl: PublicAssetAclComposite;
+      assetCollections: PublicAssetCollectionsComposite;
+      assetFiles: PublicAssetFilesComposite;
+      assetTags: PublicAssetTagsComposite;
+      assetVersions: PublicAssetVersionsComposite;
+      assets: PublicAssetsComposite;
+      blogPosts: PublicBlogPostsComposite;
+      captions: PublicCaptionsComposite;
+      collectionAcl: PublicCollectionAclComposite;
+      collections: PublicCollectionsComposite;
+      commentMentions: PublicCommentMentionsComposite;
+      commentThreads: PublicCommentThreadsComposite;
+      comments: PublicCommentsComposite;
+      folderAcl: PublicFolderAclComposite;
+      folders: PublicFoldersComposite;
+      httpHeader: PublicHttpHeaderComposite;
+      httpRequest: PublicHttpRequestComposite;
+      httpResponse: PublicHttpResponseComposite;
+      jobs: PublicJobsComposite;
+      permissionAudit: PublicPermissionAuditComposite;
+      person: PublicPersonComposite;
+      personSummary: PublicPersonSummaryComposite;
+      renditions: PublicRenditionsComposite;
+      shareLinks: PublicShareLinksComposite;
+      storageLocations: PublicStorageLocationsComposite;
+      tags: PublicTagsComposite;
+      thumbnails: PublicThumbnailsComposite;
+      todos: PublicTodosComposite;
+      uploadSessions: PublicUploadSessionsComposite;
+    };
+  };
+}
 
 // ============================================
 // Warnings
@@ -2526,6 +2181,3 @@ export type PublicWordSimilarityOpReturn = z.infer<typeof PublicWordSimilarityOp
 // - Unknown type: http_method (udt: http_method) in column method
 // - Unknown type: http_header[] (udt: http_header[]) in column headers
 // - Unknown type: http_header[] (udt: http_header[]) in column headers
-// - Unknown type: user-defined (udt: permission_preset) in column p
-// - Unknown type: array (udt: ARRAY) in column return_value
-// - Unknown type: user-defined (udt: permission_preset) in column return_value

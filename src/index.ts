@@ -39,8 +39,9 @@ export async function generateZodSchemasString(
     config: DatabaseConfig,
     options: SchemaGenerationOptions = {}
 ): Promise<string> {
-    const result = await generateZodSchemas(config, options);
-    return formatOutput(result);
+    const metadata = await introspectDatabase(config, options);
+    const result = generateSchemas(metadata, options);
+    return formatOutput(result, metadata);
 }
 
 /**

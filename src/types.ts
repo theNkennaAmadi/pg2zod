@@ -160,16 +160,19 @@ export interface SchemaGenerationOptions {
   /** Exclude specific tables */
   excludeTables?: string[];
   
+  /** Exclude internal/system tables (default: true) */
+  excludeInternalTables?: boolean;
+  
   /** Generate input schemas (for create/update operations) (default: true) */
   generateInputSchemas?: boolean;
   
-  /** Include composite types in generation (default: false) */
+  /** Include composite types in generation (default: true) */
   includeCompositeTypes?: boolean;
   
-  /** Include database views in generation (default: false) */
+  /** Include database views in generation (default: true) */
   includeViews?: boolean;
   
-  /** Include database functions/procedures in generation (default: false) */
+  /** Include database functions/procedures in generation (default: true) */
   includeRoutines?: boolean;
   
   /** Include security invoker routines (default: false, only security definer) */

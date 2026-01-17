@@ -334,8 +334,8 @@ function generateViewSchema(
 ): string {
     const schemaPrefix = toPascalCase(view.schemaName);
     const viewName = toPascalCase(view.viewName);
-    const schemaName = `${schemaPrefix}${viewName}Schema`;
-    const typeName = `${schemaPrefix}${viewName}`;
+    const schemaName = `${schemaPrefix}${viewName}ViewSchema`;
+    const typeName = `${schemaPrefix}${viewName}View`;
 
     let code = '';
 
@@ -679,9 +679,308 @@ function generateTableSchema(
 }
 
 /**
+ * Generate Database type that organizes all generated types by schema
+ */
+function generateDatabaseType(result: GenerationResult, metadata: DatabaseMetadata): string {
+    // Group all entities by schema
+    const schemaMap = new Map<string, {
+        tables: Array<{ name: string; schemaName: string; tableName: string }>;
+        views: Array<{ name: string; schemaName: string; viewName: string }>;
+        routines: Array<{ name: string; schemaName: string; routineName: string; hasParams: boolean; hasReturn: boolean }>;
+        enums: Array<{ name: string; schemaName: string; enumName: string }>;
+        compositeTypes: Array<{ name: string; schemaName: string; typeName: string }>;
+        domains: Array<{ name: string; schemaName: string; domainName: string }>;
+        ranges: Array<{ name: string; schemaName: string; rangeName: string }>;
+    }>();
+
+    // Collect tables
+    for (const schema of result.schemas) {
+        const schemaPrefix = toPascalCase(schema.schemaName);
+        const tableName = toPascalCase(schema.tableName);
+        const fullName = `${schemaPrefix}${tableName}`;
+
+        if (!schemaMap.has(schema.schemaName)) {
+            schemaMap.set(schema.schemaName, {
+                tables: [],
+                views: [],
+                routines: [],
+                enums: [],
+                compositeTypes: [],
+                domains: [],
+                ranges: [],
+            });
+        }
+
+        schemaMap.get(schema.schemaName)!.tables.push({
+            name: fullName,
+            schemaName: schema.schemaName,
+            tableName: schema.tableName,
+        });
+    }
+
+    // Collect views (views have 'View' suffix in their type names)
+    for (const view of result.views) {
+        const parts = view.name.match(/^([A-Z][a-z0-9]*)(.+)View$/);
+        if (parts && parts.length >= 3) {
+            const schemaName = parts[1].toLowerCase();
+            if (!schemaMap.has(schemaName)) {
+                schemaMap.set(schemaName, {
+                    tables: [],
+                    views: [],
+                    routines: [],
+                    enums: [],
+                    compositeTypes: [],
+                    domains: [],
+                    ranges: [],
+                });
+            }
+            schemaMap.get(schemaName)!.views.push({
+                name: view.name,
+                schemaName,
+                viewName: parts[2],
+            });
+        }
+    }
+
+    // Collect routines - need to check metadata to see if they have params/returns
+    const routineMetadataMap = new Map<string, RoutineMetadata>();
+    for (const routine of metadata.routines) {
+        const schemaPrefix = toPascalCase(routine.schemaName);
+        const routineName = toPascalCase(routine.routineName);
+        const fullName = `${schemaPrefix}${routineName}`;
+        routineMetadataMap.set(fullName, routine);
+    }
+
+    for (const routine of result.routines) {
+        const parts = routine.name.match(/^([A-Z][a-z0-9]*)(.+)$/);
+        if (parts && parts.length >= 3) {
+            const schemaName = parts[1].toLowerCase();
+            if (!schemaMap.has(schemaName)) {
+                schemaMap.set(schemaName, {
+                    tables: [],
+                    views: [],
+                    routines: [],
+                    enums: [],
+                    compositeTypes: [],
+                    domains: [],
+                    ranges: [],
+                });
+            }
+
+            const routineMeta = routineMetadataMap.get(routine.name);
+            if (routineMeta) {
+                const inParams = routineMeta.parameters.filter(
+                    (p) => p.parameterMode === 'IN' || p.parameterMode === 'INOUT'
+                );
+                const hasReturn = routineMeta.routineType === 'FUNCTION' && 
+                                routineMeta.returnType && 
+                                routineMeta.returnType !== 'void';
+                const outParams = routineMeta.parameters.filter(
+                    (p) => p.parameterMode === 'OUT' || p.parameterMode === 'INOUT'
+                );
+
+                schemaMap.get(schemaName)!.routines.push({
+                    name: routine.name,
+                    schemaName,
+                    routineName: parts[2],
+                    hasParams: inParams.length > 0,
+                    hasReturn: hasReturn || outParams.length > 0,
+                });
+            }
+        }
+    }
+
+    // Collect enums
+    for (const enumType of result.enums) {
+        const parts = enumType.name.match(/^([A-Z][a-z0-9]*)(.+)$/);
+        if (parts && parts.length >= 3) {
+            const schemaName = parts[1].toLowerCase();
+            if (!schemaMap.has(schemaName)) {
+                schemaMap.set(schemaName, {
+                    tables: [],
+                    views: [],
+                    routines: [],
+                    enums: [],
+                    compositeTypes: [],
+                    domains: [],
+                    ranges: [],
+                });
+            }
+            schemaMap.get(schemaName)!.enums.push({
+                name: enumType.name,
+                schemaName,
+                enumName: parts[2],
+            });
+        }
+    }
+
+    // Collect composite types
+    for (const compositeType of result.compositeTypes) {
+        const parts = compositeType.name.match(/^([A-Z][a-z0-9]*)(.+)Composite$/);
+        if (parts && parts.length >= 3) {
+            const schemaName = parts[1].toLowerCase();
+            if (!schemaMap.has(schemaName)) {
+                schemaMap.set(schemaName, {
+                    tables: [],
+                    views: [],
+                    routines: [],
+                    enums: [],
+                    compositeTypes: [],
+                    domains: [],
+                    ranges: [],
+                });
+            }
+            schemaMap.get(schemaName)!.compositeTypes.push({
+                name: compositeType.name,
+                schemaName,
+                typeName: parts[2],
+            });
+        }
+    }
+
+    // Collect domains
+    for (const domain of result.domains) {
+        const parts = domain.name.match(/^([A-Z][a-z0-9]*)(.+)$/);
+        if (parts && parts.length >= 3) {
+            const schemaName = parts[1].toLowerCase();
+            if (!schemaMap.has(schemaName)) {
+                schemaMap.set(schemaName, {
+                    tables: [],
+                    views: [],
+                    routines: [],
+                    enums: [],
+                    compositeTypes: [],
+                    domains: [],
+                    ranges: [],
+                });
+            }
+            schemaMap.get(schemaName)!.domains.push({
+                name: domain.name,
+                schemaName,
+                domainName: parts[2],
+            });
+        }
+    }
+
+    // Collect ranges
+    for (const range of result.ranges) {
+        const parts = range.name.match(/^([A-Z][a-z0-9]*)(.+)$/);
+        if (parts && parts.length >= 3) {
+            const schemaName = parts[1].toLowerCase();
+            if (!schemaMap.has(schemaName)) {
+                schemaMap.set(schemaName, {
+                    tables: [],
+                    views: [],
+                    routines: [],
+                    enums: [],
+                    compositeTypes: [],
+                    domains: [],
+                    ranges: [],
+                });
+            }
+            schemaMap.get(schemaName)!.ranges.push({
+                name: range.name,
+                schemaName,
+                rangeName: parts[2],
+            });
+        }
+    }
+
+    let output = '';
+    output += `// ============================================\n`;
+    output += `// Database Types\n`;
+    output += `// ============================================\n\n`;
+
+    output += `export interface Database {\n`;
+
+    // Generate schema sections
+    const schemas = Array.from(schemaMap.keys()).sort();
+    for (const schemaName of schemas) {
+        const entities = schemaMap.get(schemaName)!;
+        const schemaPrefix = toPascalCase(schemaName);
+
+        output += `  ${schemaName}: {\n`;
+
+        // Tables
+        if (entities.tables.length > 0) {
+            output += `    Tables: {\n`;
+            for (const table of entities.tables) {
+                output += `      ${table.tableName}: {\n`;
+                output += `        Row: ${table.name};\n`;
+                output += `        Insert: ${table.name}Insert;\n`;
+                output += `        Update: ${table.name}Update;\n`;
+                output += `      };\n`;
+            }
+            output += `    };\n`;
+        }
+
+        // Views
+        if (entities.views.length > 0) {
+            output += `    Views: {\n`;
+            for (const view of entities.views) {
+                output += `      ${view.viewName}: {\n`;
+                output += `        Row: ${view.name};\n`;
+                output += `      };\n`;
+            }
+            output += `    };\n`;
+        }
+
+        // Functions
+        if (entities.routines.length > 0) {
+            output += `    Functions: {\n`;
+            for (const routine of entities.routines) {
+                const routineName = routine.routineName.replace(/^[A-Z]/, (c) => c.toLowerCase());
+                output += `      ${routineName}: {\n`;
+                
+                // Only include Args if the function has parameters
+                if (routine.hasParams) {
+                    output += `        Args: ${routine.name}Params;\n`;
+                } else {
+                    output += `        Args: Record<string, never>;\n`;
+                }
+                
+                // Only include Returns if the function has a return type
+                if (routine.hasReturn) {
+                    output += `        Returns: ${routine.name}Return;\n`;
+                } else {
+                    output += `        Returns: void;\n`;
+                }
+                
+                output += `      };\n`;
+            }
+            output += `    };\n`;
+        }
+
+        // Enums
+        if (entities.enums.length > 0) {
+            output += `    Enums: {\n`;
+            for (const enumType of entities.enums) {
+                output += `      ${enumType.enumName.replace(/^[A-Z]/, (c) => c.toLowerCase())}: ${enumType.name};\n`;
+            }
+            output += `    };\n`;
+        }
+
+        // Composite Types
+        if (entities.compositeTypes.length > 0) {
+            output += `    CompositeTypes: {\n`;
+            for (const compositeType of entities.compositeTypes) {
+                output += `      ${compositeType.typeName.replace(/^[A-Z]/, (c) => c.toLowerCase())}: ${compositeType.name};\n`;
+            }
+            output += `    };\n`;
+        }
+
+        output += `  };\n`;
+    }
+
+    output += `}\n`;
+
+    return output;
+}
+
+/**
  * Format the complete output file
  */
-export function formatOutput(result: GenerationResult): string {
+export function formatOutput(result: GenerationResult, metadata: DatabaseMetadata): string {
     let output = `/**\n`;
     output += ` * ==========================================\n`;
     output += ` *     | GENERATED BY PG2ZOD |\n`;
@@ -777,6 +1076,9 @@ export function formatOutput(result: GenerationResult): string {
             output += routine.code + '\n';
         }
     }
+
+    // Database Type
+    output += generateDatabaseType(result, metadata) + '\n';
 
     // Warnings
     if (result.warnings.length > 0) {
