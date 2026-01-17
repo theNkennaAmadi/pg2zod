@@ -91,14 +91,28 @@ function getArgArray(args: string[], flag: string): string[] | undefined {
  */
 function parseConnectionUrl(url: string): DatabaseConfig {
     const match = url.match(
-        /postgresql:\/\/([^:]+):([^@]+)@([^:\/]+):(\d+)\/(.+)/
+        /postgresql:\/\/([^:]+):([^@]+)@([^:\/]+):(\d+)\/([^?]+)(\?.*)?/
     );
 
     if (!match) {
         throw new Error('Invalid connection URL format');
     }
 
-    const [, user, password, host, port, database] = match;
+    const [, user, password, host, port, database, queryString] = match;
+
+    // Parse query parameters
+    let ssl: boolean | { rejectUnauthorized: boolean } = false;
+    
+    if (queryString) {
+        const params = new URLSearchParams(queryString.substring(1)); // Remove leading '?'
+        const sslmode = params.get('sslmode');
+        
+        if (sslmode) {
+            if (sslmode === 'require' || sslmode === 'verify-ca' || sslmode === 'verify-full') {
+                ssl = sslmode === 'require' ? true : { rejectUnauthorized: true };
+            }
+        }
+    }
 
     return {
         host,
@@ -106,7 +120,7 @@ function parseConnectionUrl(url: string): DatabaseConfig {
         database,
         user,
         password,
-        ssl: url.includes('sslmode=require'),
+        ssl,
     };
 }
 

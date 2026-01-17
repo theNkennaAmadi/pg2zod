@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.2.1
+
+### Patch Changes
+
+- **Bug Fixes:**
+
+  - Fixed connection URL parser to properly handle query parameters (e.g., `?sslmode=verify-full&sslrootcert=system`)
+  - Database name is now correctly extracted before query string instead of including the entire query string
+  - SSL mode is now properly parsed from query parameters and configured appropriately
+  - Improved array and custom type detection in type mapper to handle both `_text` and `text[]` udtName formats
+  - Fixed enum, composite type, and range type lookups to check both base and original udtName for arrays
+  - Removed unused variable warning in Database type generation
+
 ## 2.2.0
 
 ### Minor Changes
