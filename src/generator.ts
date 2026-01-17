@@ -897,7 +897,6 @@ function generateDatabaseType(result: GenerationResult, metadata: DatabaseMetada
     const schemas = Array.from(schemaMap.keys()).sort();
     for (const schemaName of schemas) {
         const entities = schemaMap.get(schemaName)!;
-        const schemaPrefix = toPascalCase(schemaName);
 
         output += `  ${schemaName}: {\n`;
 

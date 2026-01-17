@@ -57,19 +57,26 @@ function mapBaseTypeToZod(
   let udtName = column.udtName;
   const dataType = column.dataType.toLowerCase();
 
-  // PostgreSQL array types have underscore prefix (e.g., _text for text[], _int4 for integer[])
-  // Strip the underscore to get the actual base type name
-  if (column.isArray && udtName.startsWith('_')) {
-    udtName = udtName.substring(1);
-  }
-
-  // Custom type mappings
+  // Custom type mappings (check original udtName first)
   if (options.customTypeMappings?.[udtName]) {
     return options.customTypeMappings[udtName];
   }
 
-  // Check if it's an enum
-  const enumType = metadata.enums.find((e) => e.enumName === udtName);
+  // For arrays, extract the base type name
+  // PostgreSQL array types have underscore prefix (e.g., _text for text[], _int4 for integer[])
+  // But sometimes udtName comes as 'text[]' instead of '_text'
+  let baseUdtName = udtName;
+  if (column.isArray) {
+    if (udtName.startsWith('_')) {
+      baseUdtName = udtName.substring(1);
+    } else if (udtName.endsWith('[]')) {
+      // Handle 'text[]' format
+      baseUdtName = udtName.replace(/\[\]$/, '');
+    }
+  }
+
+  // Check if it's an enum (check both original and base name for arrays)
+  const enumType = metadata.enums.find((e) => e.enumName === baseUdtName || e.enumName === udtName);
   if (enumType) {
     const schemaPrefix = toPascalCase(enumType.schemaName);
     const enumName = toPascalCase(enumType.enumName);
@@ -77,7 +84,7 @@ function mapBaseTypeToZod(
   }
 
   // Check if it's a composite type
-  const compositeType = metadata.compositeTypes.find((t) => t.typeName === udtName);
+  const compositeType = metadata.compositeTypes.find((t) => t.typeName === baseUdtName || t.typeName === udtName);
   if (compositeType) {
     const schemaPrefix = toPascalCase(compositeType.schemaName);
     const typeName = toPascalCase(compositeType.typeName);
@@ -86,12 +93,15 @@ function mapBaseTypeToZod(
   }
 
   // Check if it's a range type
-  const rangeType = metadata.rangeTypes.find((r) => r.rangeName === udtName);
+  const rangeType = metadata.rangeTypes.find((r) => r.rangeName === baseUdtName || r.rangeName === udtName);
   if (rangeType) {
     const schemaPrefix = toPascalCase(rangeType.schemaName);
     const rangeName = toPascalCase(rangeType.rangeName);
     return `${schemaPrefix}${rangeName}Schema`;
   }
+
+  // Use the base name for type checking
+  udtName = baseUdtName;
 
   // Map by data type or by udtName for arrays
   // For arrays, dataType will be 'ARRAY' so we need to check the udtName
