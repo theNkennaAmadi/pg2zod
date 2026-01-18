@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.2.5
+
+### Patch Changes
+
+- Release version 2.2.5.
+
+## 2.2.4
+
+### Patch Changes
+
+- Version bump for release.
+- Fixed foreign key relationship introspection for Supabase and other PostgreSQL providers. The previous query using information_schema.constraint_column_usage had permission issues on some providers. Now uses a simpler, sequential approach with pg_catalog tables that resolves column names separately for each foreign key constraint, ensuring compatibility with connection poolers.
+
 ## 2.2.3
 
 ### Patch Changes
