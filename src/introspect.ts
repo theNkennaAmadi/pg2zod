@@ -208,7 +208,10 @@ async function introspectTables(
     }
 
     const table = tableMap.get(tableKey)!;
-    const isArray = row.data_type === 'ARRAY';
+    // Check if it's an array by data_type or by udt_name format
+    const isArray = row.data_type === 'ARRAY' || 
+                    (typeof row.udt_name === 'string' && 
+                     (row.udt_name.endsWith('[]') || row.udt_name.startsWith('_')));
 
     table.columns.push({
       columnName: row.column_name,

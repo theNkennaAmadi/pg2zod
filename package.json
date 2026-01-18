@@ -1,6 +1,6 @@
 {
   "name": "pg2zod",
-  "version": "2.2.2",
+  "version": "2.2.4",
   "type": "module",
   "description": "Introspect PostgreSQL databases and generate strict, comprehensive Zod v4 schemas with full type coverage",
   "main": "./dist/index.js",

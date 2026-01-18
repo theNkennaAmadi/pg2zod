@@ -15,8 +15,21 @@ export function mapColumnToZod(
   warnings: string[]
 ): string {
   // Handle domains first
+  // Check both domainName (from information_schema.columns.domain_name) 
+  // and udtName (as fallback, since sometimes domain_name can be null)
   if (column.domainName) {
     const domain = metadata.domains.find((d) => d.domainName === column.domainName);
+    if (domain) {
+      const schemaPrefix = toPascalCase(domain.schemaName);
+      const domainName = toPascalCase(domain.domainName);
+      let schema = `${schemaPrefix}${domainName}Schema`;
+      return column.isNullable ? `${schema}.nullable()` : schema;
+    }
+  }
+  
+  // Fallback: check if udtName matches a domain (in case domain_name wasn't set)
+  if (!column.domainName && column.udtName) {
+    const domain = metadata.domains.find((d) => d.domainName === column.udtName);
     if (domain) {
       const schemaPrefix = toPascalCase(domain.schemaName);
       const domainName = toPascalCase(domain.domainName);
@@ -62,16 +75,23 @@ function mapBaseTypeToZod(
     return options.customTypeMappings[udtName];
   }
 
+  // Normalize udtName: extract base type by removing precision/scale and array notation
+  // Handle formats like: numeric(10,2), text[], _text, etc.
+  let baseUdtName = udtName;
+  
+  // Remove precision/scale notation: numeric(10,2) -> numeric
+  baseUdtName = baseUdtName.replace(/\([^)]*\)$/, '');
+  
   // For arrays, extract the base type name
   // PostgreSQL array types have underscore prefix (e.g., _text for text[], _int4 for integer[])
   // But sometimes udtName comes as 'text[]' instead of '_text'
-  let baseUdtName = udtName;
-  if (column.isArray) {
-    if (udtName.startsWith('_')) {
-      baseUdtName = udtName.substring(1);
-    } else if (udtName.endsWith('[]')) {
+  // Also handle case where isArray might not be set correctly but udtName indicates array
+  if (column.isArray || baseUdtName.endsWith('[]')) {
+    if (baseUdtName.startsWith('_')) {
+      baseUdtName = baseUdtName.substring(1);
+    } else if (baseUdtName.endsWith('[]')) {
       // Handle 'text[]' format
-      baseUdtName = udtName.replace(/\[\]$/, '');
+      baseUdtName = baseUdtName.replace(/\[\]$/, '');
     }
   }
 
@@ -100,12 +120,21 @@ function mapBaseTypeToZod(
     return `${schemaPrefix}${rangeName}Schema`;
   }
 
-  // Use the base name for type checking
-  udtName = baseUdtName;
-
+  // Use the normalized base name for type checking
   // Map by data type or by udtName for arrays
-  // For arrays, dataType will be 'ARRAY' so we need to check the udtName
-  const typeToCheck = dataType === 'array' ? udtName : dataType;
+  // For arrays, dataType will be 'ARRAY' so we need to check the normalized udtName
+  // Also normalize dataType if it contains precision/scale notation
+  const normalizedTypeName = baseUdtName.toLowerCase();
+  let normalizedDataType = dataType;
+  // Remove precision/scale notation from dataType: numeric(10,2) -> numeric
+  if (normalizedDataType.includes('(')) {
+    normalizedDataType = normalizedDataType.replace(/\([^)]*\)$/, '').trim();
+  }
+  
+  // If this is an array column or udtName indicates an array, use the normalized base type name
+  // This handles cases where udtName is 'text[]' but dataType might not be 'array'
+  const isArrayType = column.isArray || udtName.endsWith('[]') || udtName.startsWith('_');
+  const typeToCheck = (dataType === 'array' || isArrayType) ? normalizedTypeName : normalizedDataType;
   
   switch (typeToCheck) {
     // Numeric types
