@@ -1,20 +1,11 @@
 # Changelog
 
-## 2.2.4
-
-### Patch Changes
-
-- Fixed type mapping for `numeric(precision,scale)` types (e.g., `numeric(10,2)`) - now correctly extracts base type `numeric` for proper Zod schema generation. Fixed type mapping for array types with `text[]` format - now correctly recognizes and maps array columns to `z.array(z.string())`. Improved array detection in introspection to handle both `ARRAY` data type and `udt_name` formats (`text[]` or `_text`). Fixed domain type detection - now checks `udt_name` as fallback when `domain_name` column is not set in information_schema, fixing unrecognized domain types like `http_method`.
-
 ## 2.2.3
 
 ### Patch Changes
 
-- **Bug Fixes:**
-  - Fixed type mapping for `numeric(precision,scale)` types (e.g., `numeric(10,2)`) - now correctly extracts base type `numeric` for proper Zod schema generation
-  - Fixed type mapping for array types with `text[]` format - now correctly recognizes and maps array columns to `z.array(z.string())`
-  - Improved array detection in introspection to handle both `ARRAY` data type and `udt_name` formats (`text[]` or `_text`)
-  - Fixed domain type detection - now checks `udt_name` as fallback when `domain_name` column is not set in information_schema, fixing unrecognized domain types like `http_method`
+- Fixed foreign key relationship introspection for Supabase and other PostgreSQL providers. The previous query using information_schema.constraint_column_usage had permission issues on some providers. Now uses a simpler, sequential approach with pg_catalog tables that resolves column names separately for each foreign key constraint, ensuring compatibility with connection poolers.
+- Fixed type mapping for `numeric(precision,scale)` types (e.g., `numeric(10,2)`) - now correctly extracts base type `numeric` for proper Zod schema generation. Fixed type mapping for array types with `text[]` format - now correctly recognizes and maps array columns to `z.array(z.string())`. Improved array detection in introspection to handle both `ARRAY` data type and `udt_name` formats (`text[]` or `_text`). Fixed domain type detection - now checks `udt_name` as fallback when `domain_name` column is not set in information_schema, fixing unrecognized domain types like `http_method`.
 
 ## 2.2.2
 

@@ -154,40 +154,75 @@ async function introspectTables(
 
   const uniqueConstraintsResult = await pool.query(uniqueConstraintsQuery, schemas);
 
-  // Get foreign key relationships
+  // Get foreign key relationships - first get basic FK info
   const foreignKeysQuery = `
     SELECT 
-      tc.table_schema,
-      tc.table_name,
-      tc.constraint_name AS foreign_key_name,
-      array_agg(kcu.column_name ORDER BY kcu.ordinal_position) AS columns,
-      ccu.table_name AS referenced_table,
-      array_agg(ccu.column_name ORDER BY kcu.ordinal_position) AS referenced_columns,
-      -- Check if it's one-to-one (FK columns are also unique)
-      EXISTS(
-        SELECT 1 
-        FROM information_schema.table_constraints uc
-        JOIN information_schema.key_column_usage ukcu 
-          ON uc.constraint_name = ukcu.constraint_name
-          AND uc.table_schema = ukcu.table_schema
-        WHERE uc.constraint_type = 'UNIQUE'
-          AND uc.table_schema = tc.table_schema
-          AND uc.table_name = tc.table_name
-          AND ukcu.column_name = ANY(array_agg(kcu.column_name))
-      ) AS is_one_to_one
-    FROM information_schema.table_constraints tc
-    JOIN information_schema.key_column_usage kcu
-      ON tc.constraint_name = kcu.constraint_name
-      AND tc.table_schema = kcu.table_schema
-    JOIN information_schema.constraint_column_usage ccu
-      ON tc.constraint_name = ccu.constraint_name
-      AND tc.table_schema = ccu.constraint_schema
-    WHERE tc.constraint_type = 'FOREIGN KEY'
-      AND tc.table_schema IN (${schemaFilter})
-    GROUP BY tc.table_schema, tc.table_name, tc.constraint_name, ccu.table_name
+      n.nspname AS table_schema,
+      c.relname AS table_name,
+      con.conname AS foreign_key_name,
+      con.conkey AS column_ids,
+      con.confkey AS referenced_column_ids,
+      con.conrelid,
+      con.confrelid,
+      fc.relname AS referenced_table
+    FROM pg_constraint con
+    JOIN pg_class c ON con.conrelid = c.oid
+    JOIN pg_namespace n ON c.relnamespace = n.oid
+    JOIN pg_class fc ON con.confrelid = fc.oid
+    WHERE con.contype = 'f'
+      AND n.nspname IN (${schemaFilter})
+    ORDER BY n.nspname, c.relname, con.conname
   `;
 
   const foreignKeysResult = await pool.query(foreignKeysQuery, schemas);
+  
+  // For each FK, resolve column names
+  const foreignKeysWithColumns: Array<{
+    table_schema: string;
+    table_name: string;
+    foreign_key_name: string;
+    columns: string[];
+    referenced_table: string;
+    referenced_columns: string[];
+    is_one_to_one: boolean;
+  }> = [];
+  
+  for (const fk of foreignKeysResult.rows) {
+    // Get column names for this FK
+    const columnNamesQuery = `
+      SELECT attname 
+      FROM pg_attribute 
+      WHERE attrelid = $1 AND attnum = ANY($2::smallint[])
+      ORDER BY array_position($2::smallint[], attnum)
+    `;
+    const columnsResult = await pool.query(columnNamesQuery, [fk.conrelid, fk.column_ids]);
+    const columns = columnsResult.rows.map((r: { attname: string }) => r.attname);
+    
+    const refColumnsResult = await pool.query(columnNamesQuery, [fk.confrelid, fk.referenced_column_ids]);
+    const referencedColumns = refColumnsResult.rows.map((r: { attname: string }) => r.attname);
+    
+    // Check if it's one-to-one (FK columns have unique constraint)
+    const oneToOneQuery = `
+      SELECT EXISTS(
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = $1 
+          AND contype IN ('u', 'p')
+          AND conkey @> $2::smallint[]
+          AND conkey <@ $2::smallint[]
+      ) AS is_one_to_one
+    `;
+    const oneToOneResult = await pool.query(oneToOneQuery, [fk.conrelid, fk.column_ids]);
+    
+    foreignKeysWithColumns.push({
+      table_schema: fk.table_schema,
+      table_name: fk.table_name,
+      foreign_key_name: fk.foreign_key_name,
+      columns,
+      referenced_table: fk.referenced_table,
+      referenced_columns: referencedColumns,
+      is_one_to_one: oneToOneResult.rows[0]?.is_one_to_one || false,
+    });
+  }
 
   // Group by table
   const tableMap = new Map<string, TableMetadata>();
@@ -264,20 +299,16 @@ async function introspectTables(
   }
 
   // Add foreign key relationships
-  for (const row of foreignKeysResult.rows) {
-    const tableKey = `${row.table_schema}.${row.table_name}`;
+  for (const fk of foreignKeysWithColumns) {
+    const tableKey = `${fk.table_schema}.${fk.table_name}`;
     const table = tableMap.get(tableKey);
     if (table) {
-      // Parse array columns (they come as PostgreSQL arrays)
-      const columns = Array.isArray(row.columns) ? row.columns : [];
-      const referencedColumns = Array.isArray(row.referenced_columns) ? row.referenced_columns : [];
-      
       table.relationships.push({
-        foreignKeyName: row.foreign_key_name,
-        columns,
-        isOneToOne: row.is_one_to_one,
-        referencedRelation: row.referenced_table,
-        referencedColumns,
+        foreignKeyName: fk.foreign_key_name,
+        columns: fk.columns,
+        isOneToOne: fk.is_one_to_one,
+        referencedRelation: fk.referenced_table,
+        referencedColumns: fk.referenced_columns,
       });
     }
   }
